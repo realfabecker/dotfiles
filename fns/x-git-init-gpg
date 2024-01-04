@@ -1,0 +1,119 @@
+#!/bin/bash
+
+x-git-init-gpg () {
+   USAGE=$(cat <<HELP
+
+Description:
+  ${FUNCNAME[0]} is a script to configure your git client to sign commits. By default ${FUNCNAME[0]} generates
+  a new gpg if its not already exists for a given kid. This tool allows you export its public segment as ascii, 
+  renew a existing key or backup the configuration.
+
+Usage:
+  ${FUNCNAME[0]} [kid] <kop>
+
+Examples:
+   # configure repo gpg key
+   ${FUNCNAME[0]} sample@mail.com
+
+   # export gpg public key
+   ${FUNCNAME[0]} sample@mail.com export
+
+   # renew gpg key chain
+   ${FUNCNAME[0]} sample@mail.com renew
+
+   # backup gpg key configuration
+   ${FUNCNAME[0]} sample@mail.com backup
+HELP
+)
+   kid=$1
+   if [[ $kid == "c" ]]; then 
+      NMS=$(gpg --list-keys --with-colons | awk -F: '/^uid/ {print $10}' | sed -E 's/.*<(.*)>/\1/') && complete -W "$NMS" ${FUNCNAME[0]}
+      return 0;
+   fi;
+
+   if [[ -z $kid ]] || [[ ! $kid =~ .*@ ]]; then
+      echo "Required argument kid is not set or invalid: expected e-mail"
+      echo "$USAGE"
+      return 1
+   fi;
+
+   kop=$2
+   opr="(export|renew|backup|restore|date)"
+   if [[ ! -z $kop ]] && [[ ! $kop =~ $opr ]]; then
+      echo "Invalid operation, allowed: export, renew, backup, restore, date"
+      echo "$USAGE"
+      return 1
+   fi;
+
+   if [[ $kop == "restore" ]]; then
+      echo "Restoring keychain from ./gpg-backup"
+      gpg --import ./gpg-backup/public.gpg
+      gpg --import ./gpg-backup/private.gpg
+      gpg --import-ownertrust ./gpg-backup/trust.gpg
+      return 0
+   fi;
+
+   kst=$(gpg --fingerprint "$kid" 2> /dev/null 1> /dev/null && echo "load" || echo "create")
+   if [[ $kst == "create" ]]; then
+      echo "Genereting a new gpg key for ${kid}"
+      cat << EOF | gpg --batch --gen-key
+   Key-Type: 1
+   Key-Length: 2048
+   Subkey-Type: 1
+   Subkey-Length: 2048
+   Name-Real: $(echo $kid | sed -E 's/(.*)@.*/\1/g')
+   Name-Email: $kid
+   Expire-Date: $(date --iso-8601=s -d "+5weeks" | tr -d ":-" | cut -c 1-15)
+EOF
+   fi
+
+   if [[ $kop == "export" ]]; then
+      gpg --armor --export "$(gpg --list-keys --with-colons $1 | awk -F: '/^pub:/ {print $5}')"
+      return 0
+   fi;
+
+   if [[ $kop == "renew" ]]; then
+      echo "Renewing key chain for next \5w (pk)"
+      gpg --quick-set-expire "$(gpg --list-secret-keys --with-colons "$kid" | awk -F: '/^fpr/ {print $10}' | awk 'NR==1{print $1}')" 5w
+      
+      echo "Renewing key chain for next \5w (sk)"
+      gpg --quick-set-expire "$(gpg --list-secret-keys --with-colons "$kid" | awk -F: '/^fpr/ {print $10}' | awk 'NR==1{print $1}')" 5w '*'
+
+      return 0
+   fi;
+
+   if [[ $kop == "backup" ]]; then
+      storage=$kid-$(date +%Y%m%d)
+
+      echo "Backing up keychain"
+      mkdir -p "./${storage}"
+      gpg --export --export-options backup --output "./${storage}/public.gpg" "$kid"
+      gpg --export-secret-keys --export-options backup --output "./${storage}/private.gpg" "$kid"
+      gpg --export-ownertrust > "./${storage}/trust.gpg"
+
+      tar -cvf "${storage}.tar" ."/${storage}"
+      echo "Backup files created at ./${storage}"
+      return 0
+   fi;
+
+   if [[ $kop == "date" ]]; then
+      expire_at=$(gpg --list-keys  --with-colons "$kid" | awk -F: '/^pub/ {print $7}' | xargs -i{} date -d @{} +%Y-%m-%d)
+      echo "$kid (Expires At: ${expire_at})"
+      return  0;
+   fi;   
+
+   fgp=$(gpg --list-keys --with-colons "$kid" | awk -F: '/^pub:/ {print $5}')
+   if [[ -z $fgp ]]; then
+   echo "Unable to load fingerprint for key ${kid}"
+   fi;
+
+   echo "Setting git gpg configuration"
+   git config user.email "$kid"
+   git config user.name "$(echo "$kid" | sed -E 's/(.*)@.*/\1/g')"
+   git config user.signingkey "$fgp"
+   git config gpg.format openpgp
+   git config commit.gpgsign true
+   git config tag.gpgsign true
+}
+
+x-git-init-gpg "$@"

@@ -1,0 +1,344 @@
+- hosts: localhost
+  tasks:
+    - name: "apt: instalar pacotes padrão"
+      become: true
+      become_user: root
+      apt:
+        state: present
+        name:
+          - git
+          - curl
+          - tar
+          - unzip
+          - htop
+          - flameshot
+          - ffmpeg
+          - fzf
+          - make 
+          - wget
+          - gnupg
+          - software-properties-common
+
+    - name: "home: criar diretórios padrão"
+      block:
+        - name: "home: criar diretório bin"
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/bin"
+            state: directory
+            mode: '0755'          
+
+        - name: "home: criar diretório Workspace"
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/Workspace"
+            state: directory
+            mode: '0755'
+
+        - name: "home: criar diretório Softwares"
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/Workspace"
+            state: directory
+            mode: '0755'
+
+        - name: "home: criar diretório de funções"
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/.bash_functions"
+            state: directory
+            mode: '0755'    
+
+    - name: "fns: configurar funções personalizadas"
+      block: 
+        - name: "bashrc: configuração blocos bashrc"        
+          ansible.builtin.blockinfile:
+            path: "{{ ansible_env.HOME }}/.bashrc"
+            marker: "# {mark} dotfiles:fns"
+            insertbefore: EOF
+            block: |              
+              if [ -d ~/.bash_functions ]; then
+                  for file in ~/.bash_functions/*.sh; do
+                      [ -r "$file" ] && source "$file"
+                  done
+              fi               
+
+        - name: "x-cd: instalando e configurando o x-cd"
+          ansible.builtin.copy:
+            src: "{{ playbook_dir }}/../functions/x-cd.sh"
+            dest: "{{ ansible_env.HOME }}/.bash_functions/x-cd.sh"
+            mode: '0777'
+
+    - name: "chrome: instalar e configurar o Chrome"
+      become: yes
+      block:
+        - name: "chrome: verificar se o chrome está instalado"
+          command: which google-chrome-stable
+          register: chrome_check
+          ignore_errors: yes
+        - name: "chrome: baixar o arquivo .deb"
+          get_url:
+            url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+            dest: /tmp/google-chrome-stable_current_amd64.deb
+          when: chrome_check.rc != 0
+        - name: "chrome: instalar o arquivo .deb"
+          apt:
+            deb: /tmp/google-chrome-stable_current_amd64.deb
+          when: chrome_check.rc != 0
+
+    - name: "upx: instalar e configurar o upx"
+      block:
+        - name: "upx: verificar se o upx está instalado"
+          command: which upx
+          register: upx_check
+          ignore_errors: yes
+
+        - name: "upx: baixar o latest release upx"
+          get_url:
+            url: 'https://github.com/upx/upx/releases/download/v4.2.4/upx-4.2.4-amd64_linux.tar.xz'
+            dest: '/tmp/upx-4.2.4-amd64_linux.tar.xz'
+          when: upx_check.rc != 0
+
+        - name: "upx: extrair o arquivo tar.xz"
+          ansible.builtin.unarchive:
+            src: /tmp/upx-4.2.4-amd64_linux.tar.xz
+            dest: /tmp
+            remote_src: yes
+          when: upx_check.rc != 0
+
+        - name: "upx: copiar arquivo com permissões"
+          ansible.builtin.copy:
+            src: /tmp/upx-4.2.4-amd64_linux/upx
+            dest: "{{ ansible_env.HOME }}/bin/upx"
+            owner: "{{ ansible_env.USER }}"
+            group: "{{ ansible_env.USER }}"
+            mode: '0777'
+          when: upx_check.rc != 0
+
+    - name: "mkcert: instalar e configurar o mkcert"
+      block:
+        - name: "mkcert: verificar se o mkcert está instalado"
+          command: which mkcert
+          register: mkcert_check
+          ignore_errors: yes
+
+        - name: "mkcert: baixar o latest release mkcert"
+          get_url:
+            url: 'https://dl.filippo.io/mkcert/latest?for=linux/amd64'
+            dest: "{{ ansible_env.HOME }}/bin/mkcert"
+          when: mkcert_check.rc != 0
+
+        - name: "mkcert: tornar executável"
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/bin/mkcert"
+            mode: '0755'
+          when: mkcert_check.rc != 0
+
+        - name: "mkcert: executar o script de instalação"
+          ansible.builtin.shell: "{{ ansible_env.HOME }}/bin/mkcert --install"
+
+    - name: "aws-cli: instalar e configurar o aws-cli"
+      become: true
+      block:        
+        - name: "aws-cli: verificar se o aws cli está instalado"
+          command: which aws
+          register: aws_check
+          ignore_errors: yes
+
+        - name: "aws-cli: Baixar o arquivo .zip"
+          get_url:
+            url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+            dest: '/tmp/awscli-exe-linux-x86_64.zip'
+          when: aws_check.rc != 0
+            
+        - name: "aws-cli: extrair o arquivo .zip"
+          ansible.builtin.unarchive:
+            src: "/tmp/awscli-exe-linux-x86_64.zip"
+            dest: "/tmp"
+            remote_src: yes
+          when: aws_check.rc != 0
+
+        - name: "aws-cli: executar o script de instalação"
+          ansible.builtin.shell: "/tmp/aws/install"
+          when: aws_check.rc != 0
+
+    - name: "vscode: instalar e configurar o VS Code"
+      become: 'yes'
+      block:
+        - name: "vscode: verificar se o VS Code está instalado"
+          command: which code
+          register: vscode_check
+          ignore_errors: yes
+
+        - name: "vscode: baixar o arquivo .deb"
+          get_url:
+            url: 'https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64'
+            dest: '/tmp/vscode-linux-deb-x64.deb'
+          when: vscode_check.rc != 0
+
+        - name: "vscode: instalar o arquivo .deb"
+          apt:
+            deb: '/tmp/vscode-linux-deb-x64.deb'
+          when: vscode_check.rc != 0
+
+        - name: "vscode: remover o arquivo .deb"
+          file:
+            path: '/tmp/vscode-linux-deb-x64.deb'
+            state: 'absent'
+          when: vscode_check.rc != 0  
+
+    - name: "dbeaver: instalar e configurar o DBeaver"
+      become: yes
+      block:
+        - name: "dbeaver: verificar se o DBeaver está instalado"
+          command: which dbeaver
+          register: dbeaver_check
+          ignore_errors: yes
+
+        - name: "dbeaver: baixar o arquivo .deb"
+          get_url:
+            url: "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb"
+            dest: '/tmp/dbeaver-ce_latest_amd64.deb'
+          when: dbeaver_check.rc != 0
+
+        - name: "dbeaver: onstalar o arquivo .deb"
+          apt:
+            deb: '/tmp/dbeaver-ce_latest_amd64.deb'
+          when: dbeaver_check.rc != 0
+
+        - name: "dbeaver: remover o arquivo .deb"
+          file:
+            path: '/tmp/dbeaver-ce_latest_amd64.deb'
+            state: 'absent'
+          when: dbeaver_check.rc != 0
+
+    - name: "intellij: instalar e configurar o Intellij"
+      become: yes
+      block:
+        - name: "intellij: verificar se o Intellij está instalado"
+          command: which idea
+          register: idea_check
+          become: false
+          ignore_errors: yes
+
+        - name: "intellij: criar diretório de destino (tmp)"
+          ansible.builtin.file:
+            path: /tmp/intellij
+            state: directory
+            mode: '0755'
+          when: idea_check.rc != 0
+
+        - name: "intellij: baixar o arquivo .tar"
+          shell: "curl -O --output-dir /tmp/intellij https://download-cdn.jetbrains.com/idea/ideaIU-2024.3.tar.gz"
+          when: idea_check.rc != 0
+
+        - name: "intellij: criar diretório de destino (opt)"
+          ansible.builtin.file:
+            path: /opt/ideaIU-2024.3
+            state: directory
+            mode: '0755'
+          when: idea_check.rc != 0
+
+        - name: "intellij: extrair o arquivo .tar"
+          shell: "tar -xvf /tmp/intellij/ideaIU-2024.3.tar.gz -C /opt/ideaIU-2024.3 --strip-components=1"
+          when: idea_check.rc != 0
+
+        - name: "intellij: executando pela primeira fez"
+          become: false
+          ansible.builtin.shell: "/opt/ideaIU-2024.3/bin/idea"
+          when: idea_check.rc != 0
+
+        - name: "intellij: configurando links simbólicos"
+          become: false
+          shell: ln -s /opt/ideaIU-2024.3/bin/idea {{ ansible_env.HOME }}/bin/idea
+          when: idea_check.rc != 0
+
+        - name: "intellij: configurando items de menu gnome"
+          ansible.builtin.copy:
+            src: "{{ playbook_dir }}/../desktop/intellij-ultimate.desktop"
+            dest: /usr/share/applications/intellij-ultimate.desktop
+          when: idea_check.rc != 0
+
+    - name: "studio3t: instalar e configurar o Studio3T"
+      become: yes
+      block:
+        - name: "studio3t: verificar se o Stdudio3T está instalado"
+          ansible.builtin.stat:
+            path: /opt/studio3t/Studio-3T
+          register: studio3t_check
+
+        - name: "studio3t: criar diretório de destino"
+          ansible.builtin.file:
+            path: /tmp/studio-3t
+            state: directory
+            mode: '0755'
+          when: studio3t_check.stat.exists == False
+
+        - name: "studio3t: baixar o arquivo .tar"
+          get_url:
+            url: "https://download.studio3t.com/studio-3t/linux/2024.4.1/studio-3t-linux-x64.tar.gz"
+            dest: '/tmp/studio-3t/studio-3t-linux-x64.tar.gz'
+          when: studio3t_check.stat.exists == False
+            
+        - name: "studio3t: extrair o arquivo tar.gz"
+          ansible.builtin.unarchive:
+            src: /tmp/studio-3t/studio-3t-linux-x64.tar.gz
+            dest: /tmp/studio-3t
+            remote_src: yes
+          when: studio3t_check.stat.exists == False
+
+        - name: "studio3t: executar o script de instalação"
+          ansible.builtin.shell: "/tmp/studio-3t/studio-3t-linux-x64.sh"
+          when: studio3t_check.stat.exists == False
+
+    - name: "terraform: instalar e configurar o Terraform"
+      become: yes
+      block: 
+        - name: "terraform: verificar se o terraform está instalado"
+          command: which terraform
+          register: terraform_check
+          become: false
+          ignore_errors: yes
+
+        - name: "terraform: instalação de chaves de assinatura"
+          become: true
+          ansible.builtin.shell: |
+            wget -O- https://apt.releases.hashicorp.com/gpg | \
+              gpg --dearmor | \
+              sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+          when: terraform_check.rc != 0
+
+        - name: "terraform: verificação de chave padrão"
+          become: true
+          ansible.builtin.shell: |
+            gpg --no-default-keyring \
+              --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg \
+              --fingerprint
+          when: terraform_check.rc != 0
+
+        - name: "terraform: incluir repositório listagem apt"
+          become: true
+          ansible.builtin.shell: |
+            echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
+              https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+              sudo tee /etc/apt/sources.list.d/hashicorp.list
+          when: terraform_check.rc != 0
+
+        - name: "terraform: instalando por gerenciador apt"
+          ansible.builtin.shell: |
+            apt-get update && apt-get install terraform -y
+          when: terraform_check.rc != 0
+
+    - name: "kevin: instalar e configurar o Kevin"
+      block: 
+        - name: "kevin: verificar se o kevin está instalado"
+          command: which kevin
+          register: kevin_check
+          ignore_errors: yes
+
+        - name: "kevin: baixar e instalar o utilitário"
+          ansible.builtin.shell: |
+            curl -so- https://raw.githubusercontent.com/realfabecker/kevin/master/install.sh | bash
+          when: kevin_check.rc != 0
+
+        - name: "kevin: configurando kevin yml"
+          ansible.builtin.copy:
+            src: "{{ playbook_dir }}/../kevin/kevin.yml"
+            dest: "{{ ansible_env.HOME }}/kevin.yml"            
+          when: kevin_check.rc != 0

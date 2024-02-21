@@ -72,13 +72,19 @@ EOF
       return 0
    fi;
 
-   if [[ $kop == "renew" ]]; then
+   if [[ $kop == "renew" ]]; then      
       echo "Renewing key chain for next \5w (pk)"
       gpg --quick-set-expire "$(gpg --list-secret-keys --with-colons "$kid" | awk -F: '/^fpr/ {print $10}' | awk 'NR==1{print $1}')" 5w
       
       echo "Renewing key chain for next \5w (sk)"
       gpg --quick-set-expire "$(gpg --list-secret-keys --with-colons "$kid" | awk -F: '/^fpr/ {print $10}' | awk 'NR==1{print $1}')" 5w '*'
-
+      
+      # #!/bin/bash
+      # it may also be necessary to renew the subkey manually if it is already expired
+      # gpg --edit-key <key-id>
+      # key <sub-key-number>
+      # expire '5w'
+      # save
       return 0
    fi;
 

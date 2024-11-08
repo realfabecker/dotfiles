@@ -78,7 +78,7 @@ commands:
       echo "Backing up keychain"
       mkdir -p "./${storage}"
       gpg --export --export-options backup --output "./${storage}/public.gpg" "{{ .GetFlag "kid" }}"
-      gpg --export-secret-keys --export-options backup --output "./${storage}/private.gpg" "$kid"
+      gpg --export-secret-keys --export-options backup --output "./${storage}/private.gpg" "{{ .GetFlag "kid" }}"
       gpg --export-ownertrust > "./${storage}/trust.gpg"
 
       tar -cvf "${storage}.tar" ."/${storage}"
@@ -109,7 +109,7 @@ commands:
     cmd: |
       fgp=$(gpg --list-keys --with-colons "{{ .GetFlag "kid" }}" | awk -F: '/^pub:/ {print $5}')
       if [[ -z $fgp ]]; then
-        echo "Unable to load fingerprint for key ${kid}"
+        echo "Unable to load fingerprint for key {{ .GetFlag "kid" }}"
         exit 1
       fi;
       

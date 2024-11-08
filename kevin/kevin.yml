@@ -1,4 +1,56 @@
 commands:
+  - name: "ssm"
+    parent: "aws"
+    short: "connect into a aws instance through ssm"
+    flags:
+      - name: "tag"
+        short: "t"
+        required: true
+      - name: "port"
+        short: "p"
+      - name: "profile"
+        value: "magazord-ps-maintain"
+        short: "x"
+      - name: "region"
+        short: "r"
+        value: "sa-east-1"
+    cmd: |
+      id=$(aws ec2 describe-instances --filter 'Name=tag:Name,Values={{ .GetFlag "tag" }}' \
+        --query "Reservations[].Instances[?State.Name == 'running'].InstanceId[]" \
+        --output text \
+        --profile {{ .GetFlag "profile" }} \
+        --region {{ .GetFlag "region" }})
+
+      if [[ -z $id ]]; then
+        echo "unrecongized instance tag {{ .GetFlag "tag" }}"
+        exit 1
+      fi;
+
+      if [[ ! -z '{{ .GetFlag "port" }}' ]]; then
+        aws ssm --profile {{ .GetFlag "profile" }} start-session \
+          --target $id \
+          --document-name AWS-StartPortForwardingSession \
+          --parameters '{"portNumber":["{{ .GetFlag "port" }}"],"localPortNumber":["{{ .GetFlag "port" }}"]}' \
+          --region {{ .GetFlag "region" }}
+        exit 0
+      fi;
+
+      aws ssm --profile {{ .GetFlag "profile" }} start-session --target $id --region {{ .GetFlag "region" }}
+    shell: "/bin/bash"
+
+  - name: "kill"
+    parent: "app"
+    short: "brute force kill (9)"
+    flags:
+      - name: name
+        short: "n"
+        usage: "name of the processo to stop"
+        required: true
+    cmd: |
+      set -x
+      kill -9 $(pgrep -f {{ .GetFlag "name" }})
+    shell: "/bin/bash"
+
   - name: "restore"
     parent: "gpg"
     short: "restore key into the gpp key chain"
@@ -78,7 +130,7 @@ commands:
       echo "Backing up keychain"
       mkdir -p "./${storage}"
       gpg --export --export-options backup --output "./${storage}/public.gpg" "{{ .GetFlag "kid" }}"
-      gpg --export-secret-keys --export-options backup --output "./${storage}/private.gpg" "{{ .GetFlag "kid" }}"
+      gpg --export-secret-keys --export-options backup --output "./${storage}/private.gpg" "$kid"
       gpg --export-ownertrust > "./${storage}/trust.gpg"
 
       tar -cvf "${storage}.tar" ."/${storage}"
@@ -109,7 +161,7 @@ commands:
     cmd: |
       fgp=$(gpg --list-keys --with-colons "{{ .GetFlag "kid" }}" | awk -F: '/^pub:/ {print $5}')
       if [[ -z $fgp ]]; then
-        echo "Unable to load fingerprint for key {{ .GetFlag "kid" }}"
+        echo "Unable to load fingerprint for key ${kid}"
         exit 1
       fi;
       

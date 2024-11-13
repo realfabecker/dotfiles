@@ -13,7 +13,7 @@ commands:
         --query "Reservations[].Instances[?State.Name == 'running'].InstanceId[]" \
         --output text \
         --profile magazord-ps-maintain \
-        --region sa-east-1
+        --region sa-east-1)
 
       if [[ -z $id ]]; then
         echo "unrecongized instance tag {{ .GetFlag "tag" }}"
@@ -25,12 +25,12 @@ commands:
           --target $id \
           --document-name AWS-StartPortForwardingSession \
           --parameters '{"portNumber":["{{ .GetFlag "port" }}"],"localPortNumber":["{{ .GetFlag "port" }}"]}' \
-          --profile magazord-ps-maintain
+          --profile magazord-ps-maintain \
           --region sa-east-1
         exit 0
       fi;
 
-      aws ssm --profile {{ .GetFlag "profile" }} start-session --target $id --region {{ .GetFlag "region" }}
+      aws ssm --profile magazord-ps-maintain start-session --target $id --region sa-east-1
 
   - name: "kill"
     parent: "app"

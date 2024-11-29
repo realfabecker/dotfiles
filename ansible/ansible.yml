@@ -1,146 +1,189 @@
-# ansible-playbook --ask-become-pass software.yml
-
+# ansible-playbook --ask-become-pass ansible.deb.yml
 - hosts: localhost
   tasks:
-    - name: Instalar pacotes padrão
+    - name: "apt: instalar pacotes padrão"
       become: true
       become_user: root
       apt:
         state: present
         name:
           - htop
+          - flameshot
+          - ffmpeg
+          - fzf
+          - make 
 
-    - name: Criar diretórios padrão
-      ansible.builtin.file:
-        path: "{{ ansible_env.HOME }}/bin"
-        state: directory
-        mode: '0755'
-
-    - name: Instalar o mkcert
+    - name: "home: criar diretórios padrão"
       block:
-        - name: Verificar se o mkcert está instalado
+        - name: "home: criar diretório bin"
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/bin"
+            state: directory
+            mode: '0755'
+
+        - name: "home: criar diretório Workspace"
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/Workspace"
+            state: directory
+            mode: '0755'
+
+        - name: "home: criar diretório Softwares"
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/Workspace"
+            state: directory
+            mode: '0755'
+
+    - name: "upx: instalar e configurar o upx"
+      block:
+        - name: "upx: verificar se o upx está instalado"
+          command: which upx
+          register: upx_check
+          ignore_errors: yes
+
+        - name: "upx: baixar o latest release upx"
+          get_url:
+            url: 'https://github.com/upx/upx/releases/download/v4.2.4/upx-4.2.4-amd64_linux.tar.xz'
+            dest: '/tmp/upx-4.2.4-amd64_linux.tar.xz'
+
+        - name: "upx: extrair o arquivo tar.xz"
+          ansible.builtin.unarchive:
+            src: /tmp/upx-4.2.4-amd64_linux.tar.xz
+            dest: /tmp
+            remote_src: yes
+
+        - name: "upx: copiar arquivo com permissões"
+          ansible.builtin.copy:
+            src: /tmp/upx-4.2.4-amd64_linux/upx
+            dest: "{{ ansible_env.HOME }}/bin/upx"
+            owner: "{{ ansible_env.USER }}"
+            group: "{{ ansible_env.USER }}"
+            mode: '0777'
+
+    - name: "mkcert: instalar e configurar o mkcert"
+      block:
+        - name: "mkcert: verificar se o mkcert está instalado"
           command: which mkcert
           register: mkcert_check
           ignore_errors: yes
 
-        - name: Baixar o latest release mkcert
+        - name: "mkcert: baixar o latest release mkcert"
           get_url:
             url: 'https://dl.filippo.io/mkcert/latest?for=linux/amd64'
             dest: "{{ ansible_env.HOME }}/bin/mkcert"
           when: mkcert_check.rc != 0
 
-        - name: Tornar o mkcert arquivo executável
+        - name: "mkcert: tornar executável"
           ansible.builtin.file:
             path: "{{ ansible_env.HOME }}/bin/mkcert"
             mode: '0755'
           when: mkcert_check.rc != 0
 
-        - name: Executar o script de instalação
+        - name: "mkcert: executar o script de instalação"
           ansible.builtin.shell: "{{ ansible_env.HOME }}/bin/mkcert --install"
 
-    - name: Instalar e configurar o aws cli
+    - name: "aws-cli: instalar e configurar o aws-cli"
       become: true
       block:        
-        - name: Verificar se o aws cli está instalado
+        - name: "aws-cli: verificar se o aws cli está instalado"
           command: which aws
           register: aws_check
           ignore_errors: yes
 
-        - name: Baixar o arquivo .zip
+        - name: "aws-cli: Baixar o arquivo .zip"
           get_url:
             url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
             dest: '/tmp/awscli-exe-linux-x86_64.zip'
           when: aws_check.rc != 0
             
-        - name: Extrair o arquivo .zip
+        - name: "aws-cli: extrair o arquivo .zip"
           ansible.builtin.unarchive:
             src: "/tmp/awscli-exe-linux-x86_64.zip"
             dest: "/tmp"
             remote_src: yes
           when: aws_check.rc != 0
 
-        - name: Executar o script de instalação
+        - name: "aws-cli: executar o script de instalação"
           ansible.builtin.shell: "/tmp/aws/install"
           when: aws_check.rc != 0
 
-    - name: Instalar e configurar o VSCode
+    - name: "vscode: instalar e configurar o VS Code"
       become: 'yes'
       block:
-        - name: Verificar se o VS Code está instalado
+        - name: "vscode: verificar se o VS Code está instalado"
           command: which code
           register: vscode_check
           ignore_errors: yes
 
-        - name: Baixar o arquivo .deb
+        - name: "vscode: baixar o arquivo .deb"
           get_url:
             url: 'https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64'
             dest: '/tmp/vscode-linux-deb-x64.deb'
           when: vscode_check.rc != 0
 
-        - name: Instalar o arquivo .deb
+        - name: "vscode: instalar o arquivo .deb"
           apt:
             deb: '/tmp/vscode-linux-deb-x64.deb'
           when: vscode_check.rc != 0
 
-        - name: Remover o arquivo .deb
+        - name: "vscode: remover o arquivo .deb"
           file:
             path: '/tmp/vscode-linux-deb-x64.deb'
             state: 'absent'
           when: vscode_check.rc != 0
 
-    - name: Instalar e configurar o DBeaver
+    - name: "dbeaver: instalar e configurar o DBeaver"
       become: yes
       block:
-        - name: Verificar se o DBeaver está instalado
+        - name: "dbeaver: verificar se o DBeaver está instalado"
           command: which dbeaver
           register: dbeaver_check
           ignore_errors: yes
 
-        - name: Baixar o arquivo .deb
+        - name: "dbeaver: baixar o arquivo .deb"
           get_url:
             url: "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb"
             dest: '/tmp/dbeaver-ce_latest_amd64.deb'
           when: dbeaver_check.rc != 0
 
-        - name: Instalar o arquivo .deb
+        - name: "dbeaver: onstalar o arquivo .deb"
           apt:
             deb: '/tmp/dbeaver-ce_latest_amd64.deb'
           when: dbeaver_check.rc != 0
 
-        - name: Remover o arquivo .deb
+        - name: "dbeaver: remover o arquivo .deb"
           file:
             path: '/tmp/dbeaver-ce_latest_amd64.deb'
             state: 'absent'
           when: dbeaver_check.rc != 0
 
-    - name: Instalar e configurar o Studio3T
+    - name: "studio3t: instalar e configurar o Studio3T"
       become: yes
       block:
-        - name: Verificar se o Stdudio3T está instalado
+        - name: "studio3t: verificar se o Stdudio3T está instalado"
           ansible.builtin.stat:
             path: /opt/studio3t/Studio-3T
           register: studio3t_check
 
-        - name: Criar diretório de destino
+        - name: "studio3t: criar diretório de destino"
           ansible.builtin.file:
             path: /tmp/studio-3t
             state: directory
             mode: '0755'
           when: studio3t_check.stat.exists == False
 
-        - name: Baixar o arquivo .tar
+        - name: "studio3t: baixar o arquivo .tar"
           get_url:
             url: "https://download.studio3t.com/studio-3t/linux/2024.4.1/studio-3t-linux-x64.tar.gz"
             dest: '/tmp/studio-3t/studio-3t-linux-x64.tar.gz'
           when: studio3t_check.stat.exists == False
             
-        - name: Extrair o arquivo tar.gz
+        - name: "studio3t: extrair o arquivo tar.gz"
           ansible.builtin.unarchive:
             src: /tmp/studio-3t/studio-3t-linux-x64.tar.gz
             dest: /tmp/studio-3t
             remote_src: yes
           when: studio3t_check.stat.exists == False
 
-        - name: Executar o script de instalação
+        - name: "studio3t: executar o script de instalação"
           ansible.builtin.shell: "/tmp/studio-3t/studio-3t-linux-x64.sh"
           when: studio3t_check.stat.exists == False

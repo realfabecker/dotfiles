@@ -1,6 +1,6 @@
-# Bashy
+# Dotfiles
 
-Bashy é um compilado de funções a serem utilizadas com terminal bash
+Dotfiles é um compilado de funções a serem utilizadas com terminal bash
 
 ## Instalação e Atualização
 

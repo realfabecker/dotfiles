@@ -11,34 +11,16 @@ error() {
   command printf '\033[1;31mError\033[0m: %s\n\n' "$1" 1>&2
 }
 
-# bashy install with git clone
-bashy_install() {
-  info "Downloading" "release from github ${repo_url}"
-  git clone -q "$repo_url" "$down_dir"
-  if [[ ! -d "${down_dir}/fns" ]];then
-    error "unable to download release from github"
-    exit 1
-  fi;
+info "Cleaning" "cleaning previous artifacts
+rm -rf /tmp/dotfiles && mkdir -p /tmp/dotfiles
 
-  info "Linking" "bashy functions into current profile"
-  mkdir -p "${app_dir}/bin" && mv  "${down_dir}"/fns/* "${app_dir}"/bin/
+info "Downloading" "downloading source tarball"
+curl -L --output /tmp/dotfiles/dotfiles.tar.gz $(curl -s https://api.github.com/repos/realfabecker/dotfiles/releases/latest | grep tarball_url | cut -d '"' -f 4)
 
-  if [[ $(grep -q -i bashy ~/.bash_aliases && echo "OK") != "OK" ]]; then
-    info "Enriching" "bash_aliases with bashy bootstrap"
-    cat "${down_dir}"/ahs/bash_aliases.sh >> "${HOME}"/.bash_aliases
-  fi
+info "Extracting" "extracting tarball in tmp"
+tar -xvf dotfiles.tar.gz -C /tmp/dotfiles --strip-components=1
 
-  info "Cleaning" "installation artifacts"
-  rm -rf "$down_dir"
-}
+info "Installing" "installing with ansible"
+bash ./tmp/dotfiles/ansible/install
 
-# base config for project installation
-app_dir="$HOME/.bashy"
-down_dir="/tmp/bashy_${RANDOM}"
-repo_url=https://github.com/realfabecker/bashy.git
-
-# bashy base installation through git clone
-bashy_install
-
-# done install
 info "Completed" "link installation"

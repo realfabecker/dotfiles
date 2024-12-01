@@ -2,18 +2,14 @@
 
 Dotfiles é um compilado de funções a serem utilizadas com terminal bash
 
-## Instalação e Atualização
-
-A instalação ou atualização do bashy se dá por meio da execução do script de [install](./install.sh).
-
-Para tanto você pode realizar o download e execução manual ou utilizar o cURL da seguinte maneira:
+## Instalação
 
 ```bash
-curl -o- https://raw.githubusercontent.com/realfabecker/bashy/master/install.sh | bash
+  && mkdir -p /tmp/dotfiles \
+  && curl -L --output /tmp/dotfiles/dotfiles.tar.gz $(curl -s https://api.github.com/repos/realfabecker/dotfiles/releases/latest | grep tarball_url | cut -d '"' -f 4) \  
+  && tar -xvf dotfiles.tar.gz -C /tmp/dotfiles --strip-components=1 \
+  && bash ./tmp/dotfiles/ansible/install
 ```
-
-O script acima irá realizar o download e configuração das funções no perfil base do usuário.
-
 ## Change log
 
 Verifique o [CHANGELOG](CHANGELOG.md) para informações sobre alterações recentes.

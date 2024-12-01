@@ -48,4 +48,5 @@ HELP
  cd "$( fzf -1 --height 40% -e -q "${args[*]}" < ~/.fzf/idx.txt)" || exit 1
 }
 
-x-cd "$@"
+# gererates completions
+x-cd c

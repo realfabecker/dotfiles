@@ -299,3 +299,21 @@
           ansible.builtin.shell: |
             apt-get update && apt-get install terraform -y
           when: terraform_check.rc != 0
+
+    - name: "kevin: instalar e configurar o Kevin"
+      block: 
+        - name: "kevin: verificar se o kevin está instalado"
+          command: which kevin
+          register: kevin_check
+          ignore_errors: yes
+
+        - name: "kevin: baixar e instalar o utilitário"
+          ansible.builtin.shell: |
+            curl -so- https://raw.githubusercontent.com/realfabecker/kevin/master/install.sh | bash
+          when: kevin_check.rc != 0
+
+        - name: "kevin: configurando kevin yml"
+          ansible.builtin.copy:
+            src: "{{ playbook_dir }}/../kevin/kevin.yml"
+            dest: "{{ ansible_env.HOME }}/kevin.yml"            
+          when: kevin_check.rc != 0

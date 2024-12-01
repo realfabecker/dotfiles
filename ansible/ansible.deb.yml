@@ -1,4 +1,3 @@
-# ansible-playbook --ask-become-pass ansible.deb.yml
 - hosts: localhost
   tasks:
     - name: "apt: instalar pacotes padrão"
@@ -39,6 +38,32 @@
             path: "{{ ansible_env.HOME }}/Workspace"
             state: directory
             mode: '0755'
+
+        - name: "home: criar diretório de funções"
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/.bash_functions"
+            state: directory
+            mode: '0755'    
+
+    - name: "fns: configurar funções personalizadas"
+      block: 
+        - name: "bashrc: configuração blocos bashrc"        
+          ansible.builtin.blockinfile:
+            path: "{{ ansible_env.HOME }}/.bashrc"
+            marker: "# {mark} dotfiles:fns"
+            insertbefore: EOF
+            block: |              
+              if [ -d ~/.bash_functions ]; then
+                  for file in ~/.bash_functions/*.sh; do
+                      [ -r "$file" ] && source "$file"
+                  done
+              fi               
+
+        - name: "x-cd: instalando e configurando o x-cd"
+          ansible.builtin.copy:
+            src: "{{ playbook_dir }}/../functions/x-cd.sh"
+            dest: "{{ ansible_env.HOME }}/.bash_functions/x-cd.sh"
+            mode: '0777'
 
     - name: "chrome: instalar e configurar o Chrome"
       become: yes

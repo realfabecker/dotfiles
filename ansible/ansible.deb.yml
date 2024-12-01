@@ -40,6 +40,23 @@
             state: directory
             mode: '0755'
 
+    - name: "chrome: instalar e configurar o Chrome"
+      become: yes
+      block:
+        - name: "chrome: verificar se o chrome está instalado"
+          command: which google-chrome-stable
+          register: chrome_check
+          ignore_errors: yes
+        - name: "chrome: baixar o arquivo .deb"
+          get_url:
+            url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+            dest: /tmp/google-chrome-stable_current_amd64.deb
+          when: chrome_check.rc != 0
+        - name: "chrome: instalar o arquivo .deb"
+          apt:
+            deb: /tmp/google-chrome-stable_current_amd64.deb
+          when: chrome_check.rc != 0
+
     - name: "upx: instalar e configurar o upx"
       block:
         - name: "upx: verificar se o upx está instalado"
@@ -51,12 +68,14 @@
           get_url:
             url: 'https://github.com/upx/upx/releases/download/v4.2.4/upx-4.2.4-amd64_linux.tar.xz'
             dest: '/tmp/upx-4.2.4-amd64_linux.tar.xz'
+          when: upx_check.rc != 0
 
         - name: "upx: extrair o arquivo tar.xz"
           ansible.builtin.unarchive:
             src: /tmp/upx-4.2.4-amd64_linux.tar.xz
             dest: /tmp
             remote_src: yes
+          when: upx_check.rc != 0
 
         - name: "upx: copiar arquivo com permissões"
           ansible.builtin.copy:
@@ -65,6 +84,7 @@
             owner: "{{ ansible_env.USER }}"
             group: "{{ ansible_env.USER }}"
             mode: '0777'
+          when: upx_check.rc != 0
 
     - name: "mkcert: instalar e configurar o mkcert"
       block:
@@ -136,7 +156,7 @@
           file:
             path: '/tmp/vscode-linux-deb-x64.deb'
             state: 'absent'
-          when: vscode_check.rc != 0
+          when: vscode_check.rc != 0  
 
     - name: "dbeaver: instalar e configurar o DBeaver"
       become: yes
@@ -245,12 +265,19 @@
     - name: "terraform: instalar e configurar o Terraform"
       become: yes
       block: 
+        - name: "terraform: verificar se o terraform está instalado"
+          command: which terraform
+          register: terraform_check
+          become: false
+          ignore_errors: yes
+
         - name: "terraform: instalação de chaves de assinatura"
           become: true
           ansible.builtin.shell: |
             wget -O- https://apt.releases.hashicorp.com/gpg | \
               gpg --dearmor | \
               sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+          when: terraform_check.rc != 0
 
         - name: "terraform: verificação de chave padrão"
           become: true
@@ -258,6 +285,7 @@
             gpg --no-default-keyring \
               --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg \
               --fingerprint
+          when: terraform_check.rc != 0
 
         - name: "terraform: incluir repositório listagem apt"
           become: true
@@ -265,7 +293,9 @@
             echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
               https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
               sudo tee /etc/apt/sources.list.d/hashicorp.list
+          when: terraform_check.rc != 0
 
         - name: "terraform: instalando por gerenciador apt"
           ansible.builtin.shell: |
             apt-get update && apt-get install terraform -y
+          when: terraform_check.rc != 0

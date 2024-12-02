@@ -11,7 +11,7 @@ error() {
   command printf '\033[1;31mError\033[0m: %s\n\n' "$1" 1>&2
 }
 
-info "Cleaning" "cleaning previous artifacts
+info "Cleaning" "cleaning previous artifacts"
 rm -rf /tmp/dotfiles && mkdir -p /tmp/dotfiles
 
 info "Downloading" "downloading source tarball"
@@ -21,6 +21,6 @@ info "Extracting" "extracting tarball in tmp"
 tar -xvf dotfiles.tar.gz -C /tmp/dotfiles --strip-components=1
 
 info "Installing" "installing with ansible"
-bash ./tmp/dotfiles/ansible/install
+bash /tmp/dotfiles/ansible/install
 
 info "Completed" "link installation"

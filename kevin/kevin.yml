@@ -1,4 +1,29 @@
 commands:
+  - name: "key-gen"
+    parent: "ssh"
+    short: "generates a new ssh key"
+    flags:
+      - name: "key"
+        short: "k"
+        required: true
+      - name: "comment"
+        short: "c"
+        required: true
+    cmd: |
+      key="$HOME/.ssh/{{ .GetFlag "key" }}.id_rsa"
+      if [[ -f $key ]]; then
+        echo "key $key already exists"
+        exit 1
+      fi;
+
+      ssh-keygen -t rsa \
+        -q \
+        -f "$key" \
+        -C {{ .GetFlag "comment"}} \
+        -N ""
+
+      ssh-add $key && cat "${key}.pub"
+
   - name: "ssm"
     parent: "aws"
     short: "connect into a aws instance through ssm"
@@ -31,16 +56,6 @@ commands:
       fi;
 
       aws ssm --profile magazord-ps-maintain start-session --target $id --region sa-east-1
-
-  - name: "kill"
-    parent: "app"
-    short: "brute force kill (9)"
-    args:
-      - name: name
-        required: true
-    cmd: |
-      set -x
-      kill -9 $(pgrep -f {{ .GetArg "name" }})
 
   - name: "restore"
     parent: "gpg"

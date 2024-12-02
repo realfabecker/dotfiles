@@ -18,6 +18,7 @@
           - wget
           - gnupg
           - software-properties-common
+          - ca-certificates
 
     - name: "home: criar diretórios padrão"
       block:
@@ -342,3 +343,63 @@
             src: "{{ playbook_dir }}/../kevin/kevin.yml"
             dest: "{{ ansible_env.HOME }}/kevin.yml"            
           when: kevin_check.rc != 0
+
+    - name: "docker: instalar e configurar o Docker"
+      become: yes
+      block: 
+        - name: "docker: verificar se o docker está instalado"
+          command: which docker
+          register: docker_check          
+          ignore_errors: yes
+
+        - name: "docker: instalação de chaves de assinatura"
+          become: true
+          ansible.builtin.shell: |
+            sudo apt-get update
+            sudo apt-get install ca-certificates curl
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+          when: docker_check.rc != 0
+
+        - name: "docker: incluir repositório listagem apt"
+          become: true
+          ansible.builtin.shell: |
+            echo \
+              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+              $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+              sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+          when: docker_check.rc != 0
+
+        - name: "docker: instalando por gerenciador apt"
+          ansible.builtin.shell: |
+            sudo apt-get install docker-ce \
+              docker-ce-cli \
+              containerd.io \
+              docker-buildx-plugin \
+              docker-compose-plugin -y
+          when: docker_check.rc != 0
+
+        - name: "docker: gerenciar docker rootless"
+          become: false
+          ansible.builtin.shell: |
+            sudo groupadd docker &&
+              sudo usermod -aG docker "{{ ansible_env.USER }}" &&
+              newgrp docker
+          when: docker_check.rc != 0
+          ignore_errors: yes
+
+    - name: "volta: instalar e configurar o Volta"
+      become: yes
+      block: 
+        - name: "volta: verificar se o volta está instalado"
+          command: which volta
+          register: volta_check          
+          ignore_errors: yes
+
+        - name: "volta: intalação por curl"
+          become: false
+          ansible.builtin.shell: |
+            curl https://get.volta.sh | bash && volta setup
+          when: volta_check.rc != 0

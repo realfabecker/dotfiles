@@ -15,7 +15,7 @@ info "Cleaning" "cleaning previous artifacts"
 rm -rf /tmp/dotfiles && mkdir -p /tmp/dotfiles
 
 info "Downloading" "downloading source tarball"
-curl -L --output /tmp/dotfiles/dotfiles.tar.gz $(curl -s https://api.github.com/repos/realfabecker/dotfiles/releases/latest | grep tarball_url | cut -d '"' -f 4)
+curl -sL --output /tmp/dotfiles/dotfiles.tar.gz $(curl -s https://api.github.com/repos/realfabecker/dotfiles/releases/latest | grep tarball_url | cut -d '"' -f 4)
 
 info "Extracting" "extracting tarball in tmp"
 tar -xvf /tmp/dotfiles/dotfiles.tar.gz -C /tmp/dotfiles --strip-components=1

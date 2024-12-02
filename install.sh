@@ -21,6 +21,6 @@ info "Extracting" "extracting tarball in tmp"
 tar -xvf /tmp/dotfiles/dotfiles.tar.gz -C /tmp/dotfiles --strip-components=1
 
 info "Installing" "installing with ansible"
-bash /tmp/dotfiles/ansible/install
+bash /tmp/dotfiles/ansible/ansible.install.sh
 
 info "Completed" "link installation"

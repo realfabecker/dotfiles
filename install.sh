@@ -20,7 +20,10 @@ curl -sL --output /tmp/dotfiles/dotfiles.tar.gz $(curl -s https://api.github.com
 info "Extracting" "extracting tarball in tmp"
 tar -xvf /tmp/dotfiles/dotfiles.tar.gz -C /tmp/dotfiles --strip-components=1
 
-info "Installing" "installing with ansible"
+info "Installing" "installing dependencies"
 bash /tmp/dotfiles/ansible/ansible.install.sh
+
+info "Installing" "installing with ansible"
+ansible-playbook --ask-become-pass /tmp/dotfiles/ansible/ansible.deb.yml
 
 info "Completed" "link installation"

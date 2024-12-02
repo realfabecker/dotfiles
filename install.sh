@@ -18,7 +18,7 @@ info "Downloading" "downloading source tarball"
 curl -L --output /tmp/dotfiles/dotfiles.tar.gz $(curl -s https://api.github.com/repos/realfabecker/dotfiles/releases/latest | grep tarball_url | cut -d '"' -f 4)
 
 info "Extracting" "extracting tarball in tmp"
-tar -xvf dotfiles.tar.gz -C /tmp/dotfiles --strip-components=1
+tar -xvf /tmp/dotfiles/dotfiles.tar.gz -C /tmp/dotfiles --strip-components=1
 
 info "Installing" "installing with ansible"
 bash /tmp/dotfiles/ansible/install

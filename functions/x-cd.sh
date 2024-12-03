@@ -3,7 +3,7 @@
 x-cd () {
   USAGE=$(cat <<HELP
 Usage:
-    ${FUNCNAME[0]} [c] [dir]
+    ${FUNCNAME[0]} [c|dir]
 
 Examples:
 
@@ -45,7 +45,7 @@ HELP
     args[0]="/${args[0]}$"
  fi
 
- cd "$( fzf -1 --height 40% -e -q "${args[*]}" < ~/.fzf/idx.txt)" || exit 1
+ cd "$( fzf -1 --height 40% -e -q "${args[*]}" < ~/.fzf/idx.txt)"
 }
 
 # gererates completions

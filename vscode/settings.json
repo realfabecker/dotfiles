@@ -1,0 +1,7 @@
+{
+    "security.workspace.trust.untrustedFiles": "open",
+    "editor.mouseWheelZoom": true,
+    "[git-commit]": {
+        "editor.rulers": [72,50]
+    }
+}

@@ -46,6 +46,16 @@
             state: directory
             mode: '0755'    
 
+    - name: "git: configuração cliente git"
+      become: false
+      block:
+        - name: "git: configuração .gitconfig"
+          ansible.builtin.copy:
+            src: "{{ playbook_dir }}/../git/.gitconfig"
+            dest: "{{ ansible_env.HOME }}/.gitconfig"
+            owner: "{{ ansible_env.USER }}"
+            group: "{{ ansible_env.USER }}"
+
     - name: "fns: configurar funções personalizadas"
       block: 
         - name: "bashrc: configuração blocos bashrc"        

@@ -182,7 +182,16 @@
           file:
             path: '/tmp/vscode-linux-deb-x64.deb'
             state: 'absent'
-          when: vscode_check.rc != 0  
+          when: vscode_check.rc != 0
+
+        - name: "vscode: configurar settings json"
+          become: false
+          ansible.builtin.copy:
+            src: "{{ playbook_dir }}/../vscode/settings.json"
+            dest: "{{ ansible_env.HOME }}/.config/Code/User/settings.json"
+            owner: "{{ ansible_env.USER }}"
+            group: "{{ ansible_env.USER }}"
+          when: idea_check.rc != 0
 
     - name: "dbeaver: instalar e configurar o DBeaver"
       become: yes

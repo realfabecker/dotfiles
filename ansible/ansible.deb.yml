@@ -19,6 +19,8 @@
           - gnupg
           - software-properties-common
           - ca-certificates
+          - bison
+          - gcc
 
     - name: "home: criar diretórios padrão"
       block:
@@ -68,7 +70,7 @@
                   for file in ~/.bash_functions/*.sh; do
                       [ -r "$file" ] && source "$file"
                   done
-              fi               
+              fi
 
         - name: "x-cd: instalando e configurando o x-cd"
           ansible.builtin.copy:
@@ -201,7 +203,7 @@
             dest: "{{ ansible_env.HOME }}/.config/Code/User/settings.json"
             owner: "{{ ansible_env.USER }}"
             group: "{{ ansible_env.USER }}"
-          when: idea_check.rc != 0
+          when: vscode_check.rc != 0
 
     - name: "dbeaver: instalar e configurar o DBeaver"
       become: yes
@@ -363,6 +365,31 @@
             dest: "{{ ansible_env.HOME }}/kevin.yml"            
           when: kevin_check.rc != 0
 
+    - name: "bogo: instalar e configurar o bogo"
+      block: 
+        - name: "bogo: verificar se o bogo está instalado"
+          command: which bogo
+          register: bogo_check
+          ignore_errors: yes
+
+        - name: "bogo: baixar e instalar o utilitário"
+          ansible.builtin.shell: |
+            curl -so- https://raw.githubusercontent.com/realfabecker/bogo/master/install.sh | bash
+          when: bogo_check.rc != 0
+
+        - name: "bogo: criar diretório de configuração"
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/.bogo"
+            state: directory
+            mode: '0755'
+          when: bogo_check.rc != 0
+
+        - name: "kevin: configurando kevin yml"
+          ansible.builtin.copy:
+            src: "{{ playbook_dir }}/../bogo/repositories.yml"
+            dest: "{{ ansible_env.HOME }}/.bogo/repositories.yml"            
+          when: bogo_check.rc != 0
+
     - name: "docker: instalar e configurar o Docker"
       become: yes
       block: 
@@ -413,7 +440,8 @@
       become: yes
       block: 
         - name: "volta: verificar se o volta está instalado"
-          command: which volta
+          ansible.builtin.stat:
+            path: "{{ ansible_env.HOME }}/.volta/bin/volta"
           register: volta_check          
           ignore_errors: yes
 
@@ -421,4 +449,30 @@
           become: false
           ansible.builtin.shell: |
             curl https://get.volta.sh | bash && volta setup
-          when: volta_check.rc != 0
+          when: volta_check.stat.exists == False
+
+    - name: "golang: instalar e configurar o golang"
+      become: false
+      block: 
+        - name: "golang: verificar se o golang está instalado"
+          command: go version
+          register: go_check
+          ignore_errors: yes
+
+        - name: "golang: baixando versão mais recente golang"
+          become: false
+          ansible.builtin.shell: |
+            curl -L --output /tmp/go1.23.4.linux-amd64.tar.gz https://go.dev/dl/go1.23.4.linux-amd64.tar.gz            
+
+        - name: "golang: extraindo versão obtida por download"
+          become: true
+          ansible.builtin.shell: |
+            rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go1.23.4.linux-amd64.tar.gz
+
+        - name: "golang: configuração blocos bashrc"        
+          ansible.builtin.blockinfile:
+            path: "{{ ansible_env.HOME }}/.bashrc"
+            marker: "# {mark} dotfiles:golang"
+            insertbefore: EOF
+            block: |              
+              export PATH=$PATH:/usr/local/go/bin

@@ -463,11 +463,13 @@
           become: false
           ansible.builtin.shell: |
             curl -L --output /tmp/go1.23.4.linux-amd64.tar.gz https://go.dev/dl/go1.23.4.linux-amd64.tar.gz            
+          when: go_check.rc != 0
 
         - name: "golang: extraindo versão obtida por download"
           become: true
           ansible.builtin.shell: |
             rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go1.23.4.linux-amd64.tar.gz
+          when: go_check.rc != 0
 
         - name: "golang: configuração blocos bashrc"        
           ansible.builtin.blockinfile:
@@ -476,3 +478,39 @@
             insertbefore: EOF
             block: |              
               export PATH=$PATH:/usr/local/go/bin
+          when: go_check.rc != 0
+
+    - name: "postman: instalar e configurar o postman"
+      become: true
+      block:
+        - name: "postman: verificar se o postman está instalado"
+          command: postman
+          register: postman_check
+          ignore_errors: yes
+
+        - name: "postman: baixando o latest release"
+          ansible.builtin.shell: |
+            curl -L --output /tmp/postman-linux-x64.tar.gz https://dl.pstmn.io/download/latest/linux_64?deviceId=a6b253ce-46c5-4614-9694-815dca9e163e
+          when: postman_check.rc != 0
+
+        - name: "postman: criar diretório de destino (opt)"
+          ansible.builtin.file:
+            path: /opt/Postman
+            state: directory
+            mode: '0755'
+          when: postman_check.rc != 0
+
+        - name: "postman: extrair o arquivo .tar"
+          shell: "tar -xvf /tmp/postman-linux-x64.tar.gz -C /opt/Postman --strip-components=1"
+          when: postman_check.rc != 0
+
+        - name: "postman: configurando links simbólicos"
+          become: false
+          shell: ln -s /opt/Postman/Postman {{ ansible_env.HOME }}/bin/postman
+          when: postman_check.rc != 0
+
+        - name: "postman: configurando items de menu gnome"
+          ansible.builtin.copy:
+            src: "{{ playbook_dir }}/../desktop/postman.desktop"
+            dest: /usr/share/applications/postman.desktop
+          when: postman_check.rc != 0

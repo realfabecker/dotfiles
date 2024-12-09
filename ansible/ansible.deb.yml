@@ -21,6 +21,7 @@
           - ca-certificates
           - bison
           - gcc
+          - imagemagick
 
     - name: "home: criar diretórios padrão"
       block:
@@ -76,6 +77,14 @@
           ansible.builtin.copy:
             src: "{{ playbook_dir }}/../functions/x-cd.sh"
             dest: "{{ ansible_env.HOME }}/.bash_functions/x-cd.sh"
+            mode: '0777'
+
+    - name: "bin: configurar binários personalizados"
+      block:
+        - name: "saver: instalando e configurando o saver"
+          ansible.builtin.copy:
+            src: "{{ playbook_dir }}/../bin/saver.sh"
+            dest: "{{ ansible_env.HOME }}/bin/saver"
             mode: '0777'
 
     - name: "chrome: instalar e configurar o Chrome"

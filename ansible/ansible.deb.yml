@@ -16,6 +16,7 @@
           - fzf
           - make 
           - wget
+          - jq
           - gnupg
           - software-properties-common
           - ca-certificates

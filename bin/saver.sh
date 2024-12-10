@@ -2,9 +2,9 @@
 
 from_bing() {
   echo "Getting image of the day"
-  DTA=$(curl  -s 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=en-US')
-  URI=$(echo $DTA | jq -r '.images[0].url')
-  JID=$(echo $DTA | jq -r '.images[0].hsh')
+  DTA=$(curl  -s 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=en-US' | jq '.images[0]')
+  URI=$(echo $DTA | jq -r '.url')
+  JID=$(echo $DTA | jq -r '.hsh')
   SRC="https://bing.com$URI"
   PTH="$HOME/Imagens/Wallpapers/$JID"
 
@@ -17,7 +17,7 @@ from_bing() {
 
   MTD="$HOME/Imagens/Wallpapers/$JID.json"
   echo "Storing json metadata at: $MTD"
-  echo $DTA >> $MTD
+  echo "$DTA" > $MTD
 
   echo "Changing background with gsettings to $PIC"
   gsettings set org.gnome.desktop.background picture-uri "file://$PICT"
@@ -47,7 +47,6 @@ from_rand() {
   gsettings set org.gnome.desktop.background picture-uri "file://$PIC"
 }
 
-
 if [[ $1 == "bing" ]]; then
   from_bing
   exit 0
@@ -56,7 +55,7 @@ fi
 if [[ $1 == "rand" ]]; then
   from_rand
   exit 0
-fi	
+fi
 
 echo "err: invalid saver mode"
 exit 1

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+
 from_bing() {
   echo "Getting image of the day"
   DTA=$(curl  -s 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=en-US' | jq '.images[0]')
@@ -19,7 +21,7 @@ from_bing() {
   echo "Storing json metadata at: $MTD"
   echo "$DTA" > $MTD
 
-  echo "Changing background with gsettings to $PIC"
+  echo "Changing background with gsettings to $PICT"
   gsettings set org.gnome.desktop.background picture-uri "file://$PICT"
 }
 
@@ -28,24 +30,26 @@ from_rand() {
   echo "Getting random wallpaper from $DIR"
   if [[ ! -d $DIR ]]; then
     echo "saver: $DIR is not a valid directory"
-    exit 1
+    return
   fi
 
   PIC=$(realpath $(ls $DIR/*| grep -v .json | shuf -n1))
   if [[ ! -f "$PIC" ]]; then
     echo "saver: $PIC is not a valid file"
-    exit 1
+    return
   fi
 
   TYPE=$(echo $(file "$PIC" | cut -d " " -f 2))
   if [[ $TYPE != "JPEG" ]]; then
     echo "saver: $PIC is not a valid JPEG file"
-    exit 1
+    return
   fi
 
   echo "Changing background with gsettings to $PIC"
   gsettings set org.gnome.desktop.background picture-uri "file://$PIC"
 }
+
+echo "saver: background change"
 
 if [[ $1 == "bing" ]]; then
   from_bing
@@ -55,7 +59,7 @@ fi
 if [[ $1 == "rand" ]]; then
   from_rand
   exit 0
-fi
+fi	
 
 echo "err: invalid saver mode"
 exit 1

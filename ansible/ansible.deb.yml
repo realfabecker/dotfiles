@@ -80,13 +80,18 @@
             dest: "{{ ansible_env.HOME }}/.bash_functions/x-cd.sh"
             mode: '0777'
 
-    - name: "bin: configurar binários personalizados"
+    - name: "saver: configurar controlador de wallpapers"
       block:
         - name: "saver: instalando e configurando o saver"
           ansible.builtin.copy:
             src: "{{ playbook_dir }}/../bin/saver.sh"
             dest: "{{ ansible_env.HOME }}/bin/saver"
             mode: '0777'
+        - name: "saver: configuração de agendamento"
+          cron:
+            name: "saver: background changer"
+            special_time: reboot
+            job: "sleep 60 && $HOME/bin/saver bing"
 
     - name: "chrome: instalar e configurar o Chrome"
       become: yes
@@ -494,11 +499,13 @@
       become: true
       block:
         - name: "postman: verificar se o postman está instalado"
-          command: postman
+          command: which postman
+          become: false
           register: postman_check
           ignore_errors: yes
 
         - name: "postman: baixando o latest release"
+          become: false
           ansible.builtin.shell: |
             curl -L --output /tmp/postman-linux-x64.tar.gz https://dl.pstmn.io/download/latest/linux_64?deviceId=a6b253ce-46c5-4614-9694-815dca9e163e
           when: postman_check.rc != 0

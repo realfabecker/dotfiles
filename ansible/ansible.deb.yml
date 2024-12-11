@@ -91,7 +91,7 @@
           cron:
             name: "saver: background changer"
             special_time: reboot
-            job: "sleep 60 && $HOME/bin/saver bing"
+            job: "sleep 30 && $HOME/bin/saver bing"
 
     - name: "chrome: instalar e configurar o Chrome"
       become: yes

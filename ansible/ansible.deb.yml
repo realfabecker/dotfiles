@@ -27,28 +27,32 @@
     - name: "home: criar diretórios padrão"
       block:
         - name: "home: criar diretório bin"
+          ignore_errors: yes
           ansible.builtin.file:
             path: "{{ ansible_env.HOME }}/bin"
             state: directory
             mode: '0755'          
 
         - name: "home: criar diretório Workspace"
+          ignore_errors: yes
           ansible.builtin.file:
             path: "{{ ansible_env.HOME }}/Workspace"
             state: directory
             mode: '0755'
 
         - name: "home: criar diretório Softwares"
+          ignore_errors: yes
           ansible.builtin.file:
             path: "{{ ansible_env.HOME }}/Workspace"
             state: directory
             mode: '0755'
 
         - name: "home: criar diretório de funções"
+          ignore_errors: yes
           ansible.builtin.file:
             path: "{{ ansible_env.HOME }}/.bash_functions"
             state: directory
-            mode: '0755'    
+            mode: '0755'
 
     - name: "git: configuração cliente git"
       become: false
@@ -209,15 +213,6 @@
           file:
             path: '/tmp/vscode-linux-deb-x64.deb'
             state: 'absent'
-          when: vscode_check.rc != 0
-
-        - name: "vscode: configurar settings json"
-          become: false
-          ansible.builtin.copy:
-            src: "{{ playbook_dir }}/../vscode/settings.json"
-            dest: "{{ ansible_env.HOME }}/.config/Code/User/settings.json"
-            owner: "{{ ansible_env.USER }}"
-            group: "{{ ansible_env.USER }}"
           when: vscode_check.rc != 0
 
     - name: "dbeaver: instalar e configurar o DBeaver"
@@ -457,7 +452,8 @@
         - name: "volta: verificar se o volta está instalado"
           ansible.builtin.stat:
             path: "{{ ansible_env.HOME }}/.volta/bin/volta"
-          register: volta_check          
+          register: volta_check
+          become: false
           ignore_errors: yes
 
         - name: "volta: intalação por curl"

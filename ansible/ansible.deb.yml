@@ -367,12 +367,11 @@
         - name: "kevin: baixar e instalar o utilitário"
           ansible.builtin.shell: |
             curl -so- https://raw.githubusercontent.com/realfabecker/kevin/master/install.sh | bash
-          when: kevin_check.rc != 0
+          when: kevin_check.rc != 0        
 
         - name: "kevin: configurando kevin yml"
-          ansible.builtin.copy:
-            src: "{{ playbook_dir }}/../kevin/kevin.yml"
-            dest: "{{ ansible_env.HOME }}/kevin.yml"            
+          ansible.builtin.shell: |
+              cp -r {{ playbook_dir }}/../kevin {{ ansible_env.HOME }}/.kevin
           when: kevin_check.rc != 0
 
     - name: "bogo: instalar e configurar o bogo"
@@ -394,7 +393,7 @@
             mode: '0755'
           when: bogo_check.rc != 0
 
-        - name: "kevin: configurando kevin yml"
+        - name: "bogo: configurando bogo yml"
           ansible.builtin.copy:
             src: "{{ playbook_dir }}/../bogo/repositories.yml"
             dest: "{{ ansible_env.HOME }}/.bogo/repositories.yml"            

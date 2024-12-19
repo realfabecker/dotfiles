@@ -1,0 +1,30 @@
+commands:
+  - name: "ssm"
+    short: "connect into a aws instance through ssm"
+    flags:
+      - name: "tag"
+        short: "t"
+        required: true
+      - name: "port"
+        short: "p"      
+    cmd: |
+      id=$(aws ec2 describe-instances --filter 'Name=tag:Name,Values={{ .GetFlag "tag" }}' \
+        --query "Reservations[].Instances[?State.Name == 'running'].InstanceId[]" \
+        --output text \
+        --region sa-east-1)
+
+      if [[ -z $id ]]; then
+        echo "unrecongized instance tag {{ .GetFlag "tag" }}"
+        exit 1
+      fi;
+
+      if [[ ! -z '{{ .GetFlag "port" }}' ]]; then
+        aws ssm start-session \
+          --target $id \
+          --document-name AWS-StartPortForwardingSession \
+          --parameters '{"portNumber":["{{ .GetFlag "port" }}"],"localPortNumber":["{{ .GetFlag "port" }}"]}' \
+          --region sa-east-1
+        exit 0
+      fi;
+
+      aws ssm start-session --target $id --region sa-east-1

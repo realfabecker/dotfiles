@@ -1,0 +1,24 @@
+commands:
+  - name: "key-gen"
+    short: "generates a new ssh key"
+    flags:
+      - name: "key"
+        short: "k"
+        required: true
+      - name: "comment"
+        short: "c"
+        required: true
+    cmd: |
+      key="$HOME/.ssh/{{ .GetFlag "key" }}.id_rsa"
+      if [[ -f $key ]]; then
+        echo "key $key already exists"
+        exit 1
+      fi;
+
+      ssh-keygen -t rsa \
+        -q \
+        -f "$key" \
+        -C {{ .GetFlag "comment"}} \
+        -N ""
+
+      ssh-add $key && cat "${key}.pub"

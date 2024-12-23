@@ -1,6 +1,6 @@
 commands:
-  - name: "publish:gh"
-    short: "publish the gpg key to github"
+  - name: "gh:pub"
+    short: "publish the gpg public key to github"
     args:
       - name: kid
         short: "k"
@@ -17,14 +17,10 @@ commands:
 
       echo "Exporting temporary public key"
       temp_key=$(mktemp)
-      kevin gpg export {{ .GetArg "kid" }} > $temp_key
-
-      echo "Extracting key expiry date"
-      expire_at=$(kevin gpg date {{ .GetArg "kid" }} | sed  -E 's/.*At:\s([0-9]+)-([0-9]+)-.*\)/\1\2/g')
+      kevin gpg armor:sub {{ .GetArg "kid" }} > $temp_key
 
       echo "Publishing key to github"
-      hostname=$(hostname)
-      gh gpg-key add $temp_key --title "$hostname-GPG-$expire_at-Expiry"
+      gh gpg-key add $temp_key
     shell: "/bin/bash"
 
   - name: "restore"    
@@ -60,14 +56,14 @@ commands:
        echo -e "$config" > /tmp/gpg-key.conf
        gpg --batch --gen-key /tmp/gpg-key.conf
       
-  - name: "export"
-    short: "export gpg public key"
+  - name: "armor:sub"
+    short: "export the gpg public key"
     args:
       - name: kid        
         usage: "identifier for the gpg key"
         required: true
     cmd: |
-      gpg --armor --export "$(gpg --list-keys --with-colons {{ .GetArg "kid" }} | awk -F: '/^pub:/ {print $5}')"
+      gpg --armor --export "$(gpg --list-keys --with-colons {{ .GetArg "kid" }} | awk -F: '/^sub:/ {print $5}')"
       
   - name: "renew"
     short: "renew gpg keys"
@@ -110,15 +106,15 @@ commands:
       expire_at=$(gpg --list-keys  --with-colons "{{ .GetArg "kid" }}" | awk -F: '/^pub/ {print $7}' | xargs -i{} date -d @{} +%Y-%m-%d)
       echo "{{ .GetArg "kid" }} (Expires At: ${expire_at})"
       
-  - name: "git"
+  - name: "git:ssb"
     short: "configure git with gpg signing"
     args:
       - name: kid        
         usage: "identifier for the gpg key"
         required: true
     cmd: |
-      fgp=$(gpg --list-keys --with-colons "{{ .GetArg "kid" }}" | awk -F: '/^pub:/ {print $5}')
-      if [[ -z $fgp ]]; then
+      ssb=$(gpg --list-secret-keys --with-colons "{{ .GetArg "kid" }}" | awk -F: '/ssb/ {print $5}')
+      if [[ -z $ssb ]]; then
         echo "Unable to load fingerprint for key {{ .GetArg "kid" }}"
         exit 1
       fi;
@@ -126,7 +122,6 @@ commands:
       echo "Setting git gpg configuration"
       git config user.email "{{ .GetArg "kid" }}"
       git config user.name "$(echo "{{ .GetArg "kid" }}" | sed -E 's/(.*)@.*/\1/g')"
-      git config user.signingkey "$fgp"
+      git config user.signingkey "$ssb"
       git config gpg.format openpgp
       git config commit.gpgsign true
-      git config tag.gpgsign true

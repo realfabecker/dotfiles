@@ -1,6 +1,34 @@
 commands:
+  - name: "publish:gh"
+    short: "publish the gpg key to github"
+    args:
+      - name: kid
+        short: "k"
+        usage: "identifier for the gpg key"
+        required: true
+    cmd: |      
+      echo "Retrieving keyid from github"
+      gh_keyid=$(gh gpg-key ls | grep {{ .GetArg "kid" }} | awk '{print $2}')
+
+      if [[ ! -z $gh_keyid ]]; then
+        echo "Removing retrieved keyid"
+        gh gpg-key delete $gh_keyid --yes
+      fi;    
+
+      echo "Exporting temporary public key"
+      temp_key=$(mktemp)
+      kevin gpg export {{ .GetArg "kid" }} > $temp_key
+
+      echo "Extracting key expiry date"
+      expire_at=$(kevin gpg date {{ .GetArg "kid" }} | sed  -E 's/.*At:\s([0-9]+)-([0-9]+)-.*\)/\1\2/g')
+
+      echo "Publishing key to github"
+      hostname=$(hostname)
+      gh gpg-key add $temp_key --title "$hostname-GPG-$expire_at-Expiry"
+    shell: "/bin/bash"
+
   - name: "restore"    
-    short: "restore key backup (./gpg-backup) into the gpp key chain"
+    short: "restore key into the gpp key chain"
     flags:
       - name: backup
         short: "p"

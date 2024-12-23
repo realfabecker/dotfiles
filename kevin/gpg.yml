@@ -63,20 +63,7 @@ commands:
         usage: "identifier for the gpg key"
         required: true
     cmd: |
-      gpg --armor --export "$(gpg --list-keys --with-colons {{ .GetArg "kid" }} | awk -F: '/^sub:/ {print $5}')"
-      
-  - name: "renew"
-    short: "renew gpg keys"
-    args:
-      - name: kid        
-        usage: "identifier for the gpg key"
-        required: true
-    cmd: |
-      echo "Renewing key chain for next \5w (pk)"
-      gpg --quick-set-expire "$(gpg --list-secret-keys --with-colons "{{ .GetArg "kid" }}" | awk -F: '/^fpr/ {print $10}' | awk 'NR==1{print $1}')" 5w
-      
-      echo "Renewing key chain for next \5w (sk)"
-      gpg --quick-set-expire "$(gpg --list-secret-keys --with-colons "{{ .GetArg "kid" }}" | awk -F: '/^fpr/ {print $10}' | awk 'NR==1{print $1}')" 5w '*'
+      gpg --armor --export "$(gpg --list-keys --with-colons {{ .GetArg "kid" }} | awk -F: '/^sub:/ {print $5}')"          
       
   - name: "backup"
     short: "backup a gpg key"

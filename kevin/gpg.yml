@@ -1,11 +1,12 @@
 commands:
   - name: "restore"    
-    short: "restore key into the gpp key chain"
+    short: "restore key backup (./gpg-backup) into the gpp key chain"
     flags:
       - name: backup
         short: "p"
         value: "./gpg-backup"
         usage: "path to the gpg backup directory"
+        required: false
     cmd: |
       echo "Restoring keychain from ./gpg-backup"
       gpg --import {{ .GetFlag "backup" }}/public.gpg

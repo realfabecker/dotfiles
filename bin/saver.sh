@@ -2,15 +2,23 @@
 
 export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
 
+info() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') saver: info:" $1
+}
+
+error() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') saver: error:" $1
+}
+
 from_bing() {
-  echo "Getting image of the day"
+  info "Getting image of the day"
   DTA=$(curl  -s 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=en-US' | jq '.images[0]')
   URI=$(echo $DTA | jq -r '.url')
   JID=$(echo $DTA | jq -r '.hsh')
   SRC="https://bing.com$URI"
   PTH="$HOME/Imagens/Wallpapers/$JID"
 
-  echo "Downloading file from: $SRC"
+  info "Downloading file from: $SRC"
   wget -q -O $PTH "$SRC"
 
   TYPE=$(identify $PTH | awk '{print tolower($2)}')
@@ -18,38 +26,38 @@ from_bing() {
   mv $PTH $PICT
 
   MTD="$HOME/Imagens/Wallpapers/$JID.json"
-  echo "Storing json metadata at: $MTD"
+  info "Storing json metadata at: $MTD"
   echo "$DTA" > $MTD
 
-  echo "Changing background with gsettings to $PICT"
+  info "Changing background with gsettings to $PICT"
   gsettings set org.gnome.desktop.background picture-uri "file://$PICT"
 }
 
 from_rand() {	
   DIR="$HOME/Imagens/Wallpapers"
-  echo "Getting random wallpaper from $DIR"
+  info "Getting random wallpaper from $DIR"
   if [[ ! -d $DIR ]]; then
-    echo "saver: $DIR is not a valid directory"
+    error  "$DIR is not a valid directory"
     return
   fi
 
   PIC=$(realpath $(ls $DIR/*| grep -v .json | shuf -n1))
   if [[ ! -f "$PIC" ]]; then
-    echo "saver: $PIC is not a valid file"
+    error "$PIC is not a valid file"
     return
   fi
 
   TYPE=$(echo $(file "$PIC" | cut -d " " -f 2))
   if [[ $TYPE != "JPEG" ]]; then
-    echo "saver: $PIC is not a valid JPEG file"
+    error "$PIC is not a valid JPEG file"
     return
   fi
 
-  echo "Changing background with gsettings to $PIC"
+  info "Changing background with gsettings to $PIC"
   gsettings set org.gnome.desktop.background picture-uri "file://$PIC"
 }
 
-echo "saver: background change"
+info "background changing"
 
 if [[ $1 == "bing" ]]; then
   from_bing
@@ -61,5 +69,5 @@ if [[ $1 == "rand" ]]; then
   exit 0
 fi	
 
-echo "err: invalid saver mode"
+error "invalid saver mode"
 exit 1

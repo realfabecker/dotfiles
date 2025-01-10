@@ -457,7 +457,7 @@
         - name: "volta: intalação por curl"
           become: false
           ansible.builtin.shell: |
-            curl https://get.volta.sh | bash && volta setup
+            curl https://get.volta.sh | bash && {{ ansible_env.HOME }}/.volta/bin/volta setup
           when: volta_check.stat.exists == False
 
     - name: "golang: instalar e configurar o golang"
@@ -493,35 +493,54 @@
       become: true
       block:
         - name: "postman: verificar se o postman está instalado"
-          command: which postman
-          become: false
+          ansible.builtin.stat:
+            path: /opt/Postman/Postman
           register: postman_check
-          ignore_errors: yes
 
         - name: "postman: baixando o latest release"
           become: false
           ansible.builtin.shell: |
             curl -L --output /tmp/postman-linux-x64.tar.gz https://dl.pstmn.io/download/latest/linux_64?deviceId=a6b253ce-46c5-4614-9694-815dca9e163e
-          when: postman_check.rc != 0
+          when: postman_check.stat.exists == False
 
         - name: "postman: criar diretório de destino (opt)"
           ansible.builtin.file:
             path: /opt/Postman
             state: directory
             mode: '0755'
-          when: postman_check.rc != 0
+          when: postman_check.stat.exists == False
 
         - name: "postman: extrair o arquivo .tar"
           shell: "tar -xvf /tmp/postman-linux-x64.tar.gz -C /opt/Postman --strip-components=1"
-          when: postman_check.rc != 0
+          when: postman_check.stat.exists == False
 
         - name: "postman: configurando links simbólicos"
           become: false
           shell: ln -s /opt/Postman/Postman {{ ansible_env.HOME }}/bin/postman
-          when: postman_check.rc != 0
+          when: postman_check.stat.exists == False
 
         - name: "postman: configurando items de menu gnome"
           ansible.builtin.copy:
             src: "{{ playbook_dir }}/../desktop/postman.desktop"
             dest: /usr/share/applications/postman.desktop
-          when: postman_check.rc != 0
+          when: postman_check.stat.exists == False
+
+    - name: "gh: instalar e configurar o gh"
+      become: yes
+      block:
+          - name: "gh: verificar se o gh está instalado"
+            command: which gh
+            register: gh_check
+            ignore_errors: yes
+          - name: "gh: instalar e configurar o gh"
+            become: true
+            ansible.builtin.shell: |
+              (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
+              && sudo mkdir -p -m 755 /etc/apt/keyrings \
+                    && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+                    && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+              && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+              && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+              && sudo apt update \
+              && sudo apt install gh -y
+            when: gh_check.rc != 0

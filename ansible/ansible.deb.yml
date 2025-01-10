@@ -244,48 +244,47 @@
       become: yes
       block:
         - name: "intellij: verificar se o Intellij está instalado"
-          command: which idea
+          ansible.builtin.stat:
+            path: /opt/ideaIU-2024.3
           register: idea_check
-          become: false
-          ignore_errors: yes
 
         - name: "intellij: criar diretório de destino (tmp)"
           ansible.builtin.file:
             path: /tmp/intellij
             state: directory
             mode: '0755'
-          when: idea_check.rc != 0
+          when: idea_check.stat.exists == False
 
         - name: "intellij: baixar o arquivo .tar"
           shell: "curl -O --output-dir /tmp/intellij https://download-cdn.jetbrains.com/idea/ideaIU-2024.3.tar.gz"
-          when: idea_check.rc != 0
+          when: idea_check.stat.exists == False
 
         - name: "intellij: criar diretório de destino (opt)"
           ansible.builtin.file:
             path: /opt/ideaIU-2024.3
             state: directory
             mode: '0755'
-          when: idea_check.rc != 0
+          when: idea_check.stat.exists == False
 
         - name: "intellij: extrair o arquivo .tar"
           shell: "tar -xvf /tmp/intellij/ideaIU-2024.3.tar.gz -C /opt/ideaIU-2024.3 --strip-components=1"
-          when: idea_check.rc != 0
+          when: idea_check.stat.exists == False
 
         - name: "intellij: executando pela primeira fez"
           become: false
           ansible.builtin.shell: "/opt/ideaIU-2024.3/bin/idea"
-          when: idea_check.rc != 0
+          when: idea_check.stat.exists == False
 
         - name: "intellij: configurando links simbólicos"
           become: false
           shell: ln -s /opt/ideaIU-2024.3/bin/idea {{ ansible_env.HOME }}/bin/idea
-          when: idea_check.rc != 0
+          when: idea_check.stat.exists == False
 
         - name: "intellij: configurando items de menu gnome"
           ansible.builtin.copy:
             src: "{{ playbook_dir }}/../desktop/intellij-ultimate.desktop"
             dest: /usr/share/applications/intellij-ultimate.desktop
-          when: idea_check.rc != 0
+          when: idea_check.stat.exists == False
 
     - name: "studio3t: instalar e configurar o Studio3T"
       become: yes
@@ -444,27 +443,6 @@
               newgrp docker
           when: docker_check.rc != 0
           ignore_errors: yes
-
-    - name: "gh: instalar e configurar o gh"
-      become: yes
-      block:
-          - name: "gh: verificar se o gh está instalado"
-            command: which gh
-            register: gh_check
-            ignore_errors: yes
-
-          - name: "gh: instalar e configurar o gh"
-            become: true
-            ansible.builtin.shell: |
-              (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
-              && sudo mkdir -p -m 755 /etc/apt/keyrings \
-                    && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
-                    && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
-              && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
-              && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-              && sudo apt update \
-              && sudo apt install gh -y
-            when: gh_check.rc != 0
 
     - name: "volta: instalar e configurar o Volta"
       become: yes

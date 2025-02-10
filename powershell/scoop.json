@@ -1,0 +1,127 @@
+{
+    "buckets": [
+        {
+            "Name": "main",
+            "Source": "https://github.com/ScoopInstaller/Main",
+            "Updated": {
+                "value": "\/Date(1739032160000)\/",
+                "DisplayHint": 2,
+                "DateTime": "sábado, 8 de fevereiro de 2025 13:29:20"
+            },
+            "Manifests": 1357
+        },
+        {
+            "Name": "extras",
+            "Source": "https://github.com/ScoopInstaller/Extras",
+            "Updated": {
+                "value": "\/Date(1739032324000)\/",
+                "DisplayHint": 2,
+                "DateTime": "sábado, 8 de fevereiro de 2025 13:32:04"
+            },
+            "Manifests": 2127
+        },
+        {
+            "Name": "java",
+            "Source": "https://github.com/ScoopInstaller/Java",
+            "Updated": {
+                "value": "\/Date(1739031541000)\/",
+                "DisplayHint": 2,
+                "DateTime": "sábado, 8 de fevereiro de 2025 13:19:01"
+            },
+            "Manifests": 296
+        }
+    ],
+    "apps": [
+        {
+            "Info": "",
+            "Source": "main",
+            "Name": "7zip",
+            "Version": "24.09",
+            "Updated": "\/Date(1737159969319)\/"
+        },
+        {
+            "Info": "",
+            "Source": "extras",
+            "Name": "android-studio",
+            "Version": "2024.2.2.13",
+            "Updated": "\/Date(1738974436312)\/"
+        },
+        {
+            "Info": "",
+            "Source": "extras",
+            "Name": "dbeaver",
+            "Version": "24.3.2",
+            "Updated": "\/Date(1737163009995)\/"
+        },
+        {
+            "Info": "",
+            "Source": "extras",
+            "Name": "flameshot",
+            "Version": "12.1.0",
+            "Updated": "\/Date(1738417709792)\/"
+        },
+        {
+            "Info": "",
+            "Source": "main",
+            "Name": "git",
+            "Version": "2.47.1.2",
+            "Updated": "\/Date(1737160005128)\/"
+        },
+        {
+            "Info": "",
+            "Source": "extras",
+            "Name": "idea-ultimate",
+            "Version": "2024.3.2-243.23654.117",
+            "Updated": "\/Date(1737163297310)\/"
+        },
+        {
+            "Info": "",
+            "Source": "extras",
+            "Name": "insomnia",
+            "Version": "10.3.0",
+            "Updated": "\/Date(1738513276623)\/"
+        },
+        {
+            "Info": "",
+            "Source": "main",
+            "Name": "nano",
+            "Version": "7.2-22.1",
+            "Updated": "\/Date(1737160061083)\/"
+        },
+        {
+            "Info": "",
+            "Source": "main",
+            "Name": "ngrok",
+            "Version": "3.19.1",
+            "Updated": "\/Date(1738518209960)\/"
+        },
+        {
+            "Info": "",
+            "Source": "main",
+            "Name": "nvm",
+            "Version": "1.2.2",
+            "Updated": "\/Date(1739044410807)\/"
+        },
+        {
+            "Info": "",
+            "Source": "java",
+            "Name": "openjdk17",
+            "Version": "17.0.2-8",
+            "Updated": "\/Date(1738974313953)\/"
+        },
+        {
+            "Info": "",
+            "Source": "extras",
+            "Name": "postman",
+            "Version": "11.30.3",
+            "Updated": "\/Date(1738277488185)\/"
+        },
+        {
+            "Info": "",
+            "Source": "extras",
+            "Name": "vscode",
+            "Version": "1.96.4",
+            "Updated": "\/Date(1737160439419)\/"
+        }
+    ]
+}

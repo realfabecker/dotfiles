@@ -1,5 +1,5 @@
 commands:
-  - name: "gh:pub"
+  - name: "publish"
     short: "publish the gpg public key to github"
     args:
       - name: kid
@@ -56,7 +56,7 @@ commands:
        echo -e "$config" > /tmp/gpg-key.conf
        gpg --batch --gen-key /tmp/gpg-key.conf
       
-  - name: "armor:sub"
+  - name: "export"
     short: "export the gpg public key"
     args:
       - name: kid        
@@ -83,17 +83,7 @@ commands:
       tar -cvf "${storage}.tar" ."/${storage}"
       echo "Backup files created at ./${storage}"
       
-  - name: "date"
-    short: "show gpg expiration date"
-    args:
-      - name: kid        
-        usage: "identifier for the gpg key"
-        required: true
-    cmd: |
-      expire_at=$(gpg --list-keys  --with-colons "{{ .GetArg "kid" }}" | awk -F: '/^pub/ {print $7}' | xargs -i{} date -d @{} +%Y-%m-%d)
-      echo "{{ .GetArg "kid" }} (Expires At: ${expire_at})"
-      
-  - name: "git:ssb"
+  - name: "git"
     short: "configure git with gpg signing"
     args:
       - name: kid        

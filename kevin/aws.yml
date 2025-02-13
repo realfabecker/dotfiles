@@ -1,4 +1,38 @@
 commands:
+  - name: "cmd"
+    short: "connect into a aws container instance through cmd"
+    flags:
+      - name: "cluster"
+        short: "c"
+        required: false
+    args:
+      - name: "task"
+        usage: "task name"
+        required: true
+    cmd: |
+      cluster={{ .GetFlag "cluster" }}
+      if [[ -z $cluster ]]; then
+        cluster=cluster-painel-worker
+      fi;
+
+      task_id=$(aws --profile magazord-ps-maintain ecs list-tasks \
+        --cluster $cluster \
+        --service-name {{ .GetArg "task" }} \
+        --query 'taskArns[0]' \
+        --output text | awk -F/ '{print $NF}')
+
+      if [[ -z $task_id ]]; then
+        echo "unrecongized task name {{ .GetArg "task" }}"
+        exit 1
+      fi;
+
+      aws --profile magazord-ps-maintain ecs execute-command \
+        --cluster $cluster \
+        --task $task_id \
+        --container {{ .GetArg "task" }} \
+        --interactive \
+        --command "/bin/sh"
+
   - name: "ssm"
     short: "connect into a aws instance through ssm"
     flags:
@@ -6,11 +40,12 @@ commands:
         short: "t"
         required: true
       - name: "port"
-        short: "p"      
+        short: "p"
     cmd: |
       id=$(aws ec2 describe-instances --filter 'Name=tag:Name,Values={{ .GetFlag "tag" }}' \
         --query "Reservations[].Instances[?State.Name == 'running'].InstanceId[]" \
         --output text \
+        --profile magazord-ps-maintain \
         --region sa-east-1)
 
       if [[ -z $id ]]; then
@@ -23,8 +58,9 @@ commands:
           --target $id \
           --document-name AWS-StartPortForwardingSession \
           --parameters '{"portNumber":["{{ .GetFlag "port" }}"],"localPortNumber":["{{ .GetFlag "port" }}"]}' \
+          --profile magazord-ps-maintain \
           --region sa-east-1
         exit 0
       fi;
 
-      aws ssm start-session --target $id --region sa-east-1
+      aws ssm --profile magazord-ps-maintain start-session --target $id --region sa-east-1

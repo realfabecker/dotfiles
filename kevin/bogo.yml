@@ -1,0 +1,26 @@
+commands:
+  - name: "typescript"
+    short: "typescript project boilerplate"
+    args:
+      - name: "name"
+        usage: "project name"
+        required: true
+    cmd: |
+      set -e
+
+      big_dir=$(mktemp)
+
+      echo "dowloading project from git url..."
+      rm -rf $big_dir && git clone --depth=1 --no-checkout git@github.com:realfabecker/bigfoot.git $big_dir
+
+      echo "sparse checkout from bigfoot..."
+      (cd $big_dir && git sparse-checkout init && git sparse-checkout set typescript && git checkout)
+
+      echo "moving to current working directory..."
+      mv $big_dir/typescript {{ .GetArg "name" }}
+
+      echo "installing project dependencies..."
+      (cd {{ .GetArg "name" }} && npm install && rm -rf .git)
+
+      echo "cleaning up boilerplate things..."
+      rm -rf $big_dir

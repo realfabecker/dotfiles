@@ -1,12 +1,16 @@
 commands:
+  - name: "bogo"
+    short: "Project bootstrapping"
+    ref: ./bogo.yml
+
   - name: "ssh"
-    short: "Tools for ssh keys management"
+    short: "SSH management"
     ref: ./ssh.yml
 
   - name: "gpg"
-    short: "Tools for gpg keys management"
+    short: "GPG management"
     ref: ./gpg.yml
 
   - name: "aws"
-    short: "Tools for interactin with aws"
+    short: "AWS interface"
     ref: ./aws.yml

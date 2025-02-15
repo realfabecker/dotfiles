@@ -1,9 +1,0 @@
-projects:  
-  - name: nosferatu
-    alias: ts
-    url: https://github.com/realfabecker/nosferatu
-    description: node typescript project template
-    type: github-repo
-    scripts:
-      install: |
-        npm install

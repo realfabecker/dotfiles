@@ -215,31 +215,6 @@
               cp -r {{ playbook_dir }}/../kevin {{ ansible_env.HOME }}/.kevin
           when: kevin_check.rc != 0
 
-    - name: "bogo: instalar e configurar o bogo"
-      block: 
-        - name: "bogo: verificar se o bogo está instalado"
-          command: which bogo
-          register: bogo_check
-          ignore_errors: yes
-
-        - name: "bogo: baixar e instalar o utilitário"
-          ansible.builtin.shell: |
-            curl -so- https://raw.githubusercontent.com/realfabecker/bogo/master/install.sh | bash
-          when: bogo_check.rc != 0
-
-        - name: "bogo: criar diretório de configuração"
-          ansible.builtin.file:
-            path: "{{ ansible_env.HOME }}/.bogo"
-            state: directory
-            mode: '0755'
-          when: bogo_check.rc != 0
-
-        - name: "bogo: configurando bogo yml"
-          ansible.builtin.copy:
-            src: "{{ playbook_dir }}/../bogo/repositories.yml"
-            dest: "{{ ansible_env.HOME }}/.bogo/repositories.yml"            
-          when: bogo_check.rc != 0
-
     - name: "docker: instalar e configurar o Docker"
       become: yes
       block: 

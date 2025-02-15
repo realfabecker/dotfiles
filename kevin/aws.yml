@@ -4,19 +4,17 @@ commands:
     flags:
       - name: "cluster"
         short: "c"
-        required: false
+        required: true        
+      - name: "profile"
+        short: "p"
+        required: true
     args:
       - name: "task"
         usage: "task name"
         required: true
-    cmd: |
-      cluster={{ .GetFlag "cluster" }}
-      if [[ -z $cluster ]]; then
-        cluster=cluster-painel-worker
-      fi;
-
-      task_id=$(aws --profile magazord-ps-maintain ecs list-tasks \
-        --cluster $cluster \
+    cmd: |      
+      task_id=$(aws --profile {{ .GetFlag "profile" }} ecs list-tasks \
+        --cluster {{ .GetFlag "cluster" }} \
         --service-name {{ .GetArg "task" }} \
         --query 'taskArns[0]' \
         --output text | awk -F/ '{print $NF}')
@@ -26,8 +24,8 @@ commands:
         exit 1
       fi;
 
-      aws --profile magazord-ps-maintain ecs execute-command \
-        --cluster $cluster \
+      aws --profile {{ .GetFlag "profile" }} ecs execute-command \
+        --cluster {{ .GetFlag "cluster" }} \
         --task $task_id \
         --container {{ .GetArg "task" }} \
         --interactive \
@@ -40,12 +38,14 @@ commands:
         short: "t"
         required: true
       - name: "port"
-        short: "p"
+        required: true
+      - name: "profile"
+        required: true
     cmd: |
       id=$(aws ec2 describe-instances --filter 'Name=tag:Name,Values={{ .GetFlag "tag" }}' \
         --query "Reservations[].Instances[?State.Name == 'running'].InstanceId[]" \
         --output text \
-        --profile magazord-ps-maintain \
+        --profile {{ .GetFlag "profile" }} \
         --region sa-east-1)
 
       if [[ -z $id ]]; then
@@ -58,9 +58,9 @@ commands:
           --target $id \
           --document-name AWS-StartPortForwardingSession \
           --parameters '{"portNumber":["{{ .GetFlag "port" }}"],"localPortNumber":["{{ .GetFlag "port" }}"]}' \
-          --profile magazord-ps-maintain \
+          --profile {{ .GetFlag "profile" }} \
           --region sa-east-1
         exit 0
       fi;
 
-      aws ssm --profile magazord-ps-maintain start-session --target $id --region sa-east-1
+      aws ssm --profile {{ .GetFlag "profile" }} start-session --target $id --region sa-east-1

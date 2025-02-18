@@ -1,16 +1,20 @@
 commands:
   - name: "bogo"
-    short: "Project bootstrapping"
+    short: "Bootstrap projects"
     ref: ./bogo.yml
 
   - name: "ssh"
-    short: "SSH management"
+    short: "Manage SSH keys"
     ref: ./ssh.yml
 
   - name: "gpg"
-    short: "GPG management"
+    short: "Manage GPG keys"
     ref: ./gpg.yml
 
   - name: "aws"
-    short: "AWS interface"
+    short: "Connect to AWS services"
     ref: ./aws.yml
+
+  - name: "vpn"
+    short: "Manage VPN connections"
+    ref: ./vpn.yml

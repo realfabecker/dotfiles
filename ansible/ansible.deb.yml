@@ -23,6 +23,9 @@
           - bison
           - gcc
           - imagemagick
+          - gnome-shell-extensions
+          - gnome-shell-extension-manager
+          - wmctrl
 
     - name: "home: criar diretórios padrão"
       block:

@@ -1,0 +1,9 @@
+Host realfabecker.github.com
+  Hostname github.com
+  User git
+  IdentityFile /home/rafaelbecker/.ssh/maga.id_rsa
+
+Host rafael-becker.github.com
+  Hostname github.com
+  User git
+  IdentityFile /home/rafaelbecker/.ssh/maga.id_rsa

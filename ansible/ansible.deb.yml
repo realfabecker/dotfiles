@@ -373,7 +373,7 @@
 
         - name: "kevin: configurando kevin yml"
           ansible.builtin.shell: |
-              cp -r {{ playbook_dir }}/../kevin {{ ansible_env.HOME }}/.kevin
+              cp -R {{ playbook_dir }}/../kevin/ {{ ansible_env.HOME }}/.kevin/
           when: kevin_check.rc != 0
 
     - name: "docker: instalar e configurar o Docker"
@@ -522,3 +522,23 @@
               && sudo apt update \
               && sudo apt install gh -y
             when: gh_check.rc != 0
+
+    - name: "vpn: instalar e configurar a vpn (pritunl://secure.vpn.magazord.com.br/ku/PSKkwnQ1Lk1y18sx)"
+      block: 
+        - name: "vpn: verificar se a vpn está instalada"
+          command: pritunl-client version
+          register: vpn_check
+          ignore_errors: yes
+        - name: "vpn: instalar e configurar a vpn"
+          become: true
+          ansible.builtin.shell: |
+            sudo tee /etc/apt/sources.list.d/pritunl.list << EOF
+            deb https://repo.pritunl.com/stable/apt oracular main
+            EOF
+
+            sudo apt --assume-yes install gnupg
+            gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys 7568D9BB55FF9E5287D586017AE645C0CF8E292A
+            gpg --armor --export 7568D9BB55FF9E5287D586017AE645C0CF8E292A | sudo tee /etc/apt/trusted.gpg.d/pritunl.asc
+            sudo apt update
+            sudo apt install pritunl-client-electron
+          when: vpn_check.rc != 0

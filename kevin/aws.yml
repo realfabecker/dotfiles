@@ -6,7 +6,7 @@ commands:
         short: "c"
         required: true        
       - name: "profile"
-        short: "p"
+        short: "x"
         required: true
     args:
       - name: "task"
@@ -39,7 +39,7 @@ commands:
         required: true
       - name: "port"
         required: true
-      - name: "profile"
+      - name: "x"
         required: true
     cmd: |
       id=$(aws ec2 describe-instances --filter 'Name=tag:Name,Values={{ .GetFlag "tag" }}' \

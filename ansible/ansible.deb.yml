@@ -26,6 +26,7 @@
           - gnome-shell-extensions
           - gnome-shell-extension-manager
           - wmctrl
+          - libnss3-tools
 
     - name: "home: criar diretórios padrão"
       block:

@@ -18,3 +18,7 @@ commands:
   - name: "vpn"
     short: "Manage VPN connections"
     ref: ./vpn.yml
+
+  - name: "git"
+    short: "Manage GIT repositories"
+    ref: ./git.yml

@@ -1,0 +1,23 @@
+commands:
+  - name: "clone"
+    short: "clone a git repo from account"
+    args:
+      - name: name
+        usage: "repository name"
+        required: true
+    flags:
+      - name: email
+        usage: "signature email"
+        required: false
+        default: "realfabecker@outlook.com"
+      - name: account
+        usage: "github account url"
+        required: false
+        default: git@realfabecker.github.com:realfabecker
+    cmd: |  
+      echo "Cloning git repository from account...."
+      git clone {{ .GetFlag "account" }}/{{ .GetArg "name" }}.git
+
+      echo "Configuring git commit signature..."
+      (cd {{ .GetArg "name" }} && kevin gpg git {{ .GetFlag "email" }})
+    shell: "/bin/bash"

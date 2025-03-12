@@ -14,7 +14,9 @@ commands:
         usage: "github account url"
         required: false
         default: git@realfabecker.github.com:realfabecker
-    cmd: |  
+    cmd: |
+      set -e
+
       echo "Cloning git repository from account...."
       git clone {{ .GetFlag "account" }}/{{ .GetArg "name" }}.git
 

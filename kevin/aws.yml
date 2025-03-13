@@ -4,7 +4,7 @@ commands:
     flags:
       - name: "cluster"
         short: "c"
-        required: true        
+        required: true
       - name: "profile"
         short: "x"
         required: true
@@ -39,7 +39,8 @@ commands:
         required: true
       - name: "port"
         required: true
-      - name: "x"
+      - name: "profile"
+        short: "x"
         required: true
     cmd: |
       id=$(aws ec2 describe-instances --filter 'Name=tag:Name,Values={{ .GetFlag "tag" }}' \
@@ -64,3 +65,32 @@ commands:
       fi;
 
       aws ssm --profile {{ .GetFlag "profile" }} start-session --target $id --region sa-east-1
+
+
+  - name: "dynamodb"
+    short: "dynamodb tooling"
+    commands:      
+      - name: "dump"
+        short: "descreve tabela no dynamodb"
+        args:
+          - name: table
+            required: true
+          - name: "profile"
+            short: "x"
+            required: true
+        cmd: |
+          aws --profile {{ .GetFlag "profile" }} dynamodb describe-table --table-name {{ .GetArg "table" }} | jq '.Table | pick( .AttributeDefinitions,.TableName, .KeySchema, .ProvisionedThroughput, .GlobalSecondaryIndexes) | del( .ProvisionedThroughput.NumberOfDecreasesToday, .GlobalSecondaryIndexes[].IndexStatus, .GlobalSecondaryIndexes[].ProvisionedThroughput.NumberOfDecreasesToday, .GlobalSecondaryIndexes[].WarmThroughput, .GlobalSecondaryIndexes[].IndexSizeBytes, .GlobalSecondaryIndexes[].ItemCount, .GlobalSecondaryIndexes[].IndexArn) | .GlobalSecondaryIndexes[].ProvisionedThroughput.ReadCapacityUnits=1 | .GlobalSecondaryIndexes[].ProvisionedThroughput.WriteCapacityUnits=1 | .ProvisionedThroughput.WriteCapacityUnits=1 | .ProvisionedThroughput.ReadCapacityUnits=1'
+
+      - name: "list-tables"
+        short: "list tabelas no dynamodb"
+        cmd: |
+          aws --profile {{ .GetFlag "profile" }} dynamodb list-tables
+
+      - name: "create-table"
+        short: "cria tabela no dynamodb"
+        args:
+          - name: file
+            required: false
+            default: "./backup.json"
+        cmd: |
+          aws --profile {{ .GetFlag "profile" }} dynamodb create-table --cli-input-json file://{{ .GetArg "file"}}

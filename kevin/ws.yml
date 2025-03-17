@@ -1,0 +1,136 @@
+commands:
+  - name: "connect"
+    short: "websocket client"
+    flags:
+      - name: url
+        usage: "server url"
+        default: "ws://172.31.80.65:32768/?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImRldl9yYWZhZWxfYmVja2VyIiwic2NvcGUiOiJ3ZWJzb2NrZXQ6ZGVmYXVsdCIsImhvc3RuYW1lIjoiem9yZC0wMTE4IiwiaWF0IjoxNzQyMjEwMjk5fQ.szpH68LpSJ7LJRkl31065kijWqQEm15amkHqRvAWrUA"
+
+    # language=typescript
+    cmd: |
+        import { StandardWebSocketClient as ws } from "https://deno.land/x/websocket@v0.1.4/mod.ts";
+        import pino from "npm:pino";
+
+        export class Logger {
+          public logger: pino.Logger;
+
+          constructor(opts: { level: string }) {
+            this.logger = pino(
+              {
+                level: opts.level,
+                timestamp: () => `,"timestamp":"${new Date(Date.now()).toISOString()}"`,
+                base: {},
+                formatters: {
+                  level: (label: string, number: number) => ({ level: label }),
+                },
+              },
+              pino.destination({
+                dest: process.stdout.fd,
+                sync: false,
+                maxLength: 4096,
+              })
+            );
+          }
+
+          public inf(message: string, meta?: Record<string, any>): void {
+            this.logger.info({ metadata: meta, message: this.addslashes(message) });
+          }
+
+          public err(message: string, meta?: Record<string, any>): void {
+            this.logger.error({ metadata: meta, message: this.addslashes(message) });
+          }
+
+          public debug(message: string, meta?: Record<string, any>): void {
+            this.logger.debug({ metadata: meta, message: this.addslashes(message) });
+          }
+
+          private addslashes(str: string): string {
+            return (str + "").replace(/[\\"']/g, "\\$&").replace(/\u0000/g, "\\0");
+          }
+        }
+
+        export class WebSocketClient {
+          public ws: WebSocket | null = null;
+
+          constructor(
+            private readonly logger: Logger,
+            private readonly socketId: string,
+            private readonly socketUrl: string
+          ) {}
+
+          public connect(): void {
+            try {              
+              this.ws = new ws(this.socketUrl, {
+                timeout: 10000,
+                handshakeTimeout: 10000,
+                sessionTimeout: 10000,
+              });
+              this.ws.on("open", () => {
+                this.logger.inf(`wsclient: connected`, {
+                  operation: "wsclient",
+                  socket: this.socketId,
+                });
+              });
+              this.ws.on("error", (e) => {
+                this.logger.err(`wsclient: ${e}`, {
+                  operation: "wsclient",
+                  socket: this.socketId,
+                });
+              });
+              this.ws.on("close", () => {
+                this.logger.err("wsclient: disconnected", {
+                  operation: "wsclient",
+                  socket: this.socketId,
+                });
+                setTimeout(() => {
+                  this.logger.err("wsclient: trying to reconnect to the wsserver", {
+                    operation: "wsclient",
+                    socket: this.socketId,
+                  });
+                  this.connect();
+                }, 5 * 1000);
+              });
+              this.ws.on("message", (data: MessageEvent) => {
+                try {          
+                  const payload = JSON.parse(data.data);
+                  this.logger.debug("wsclient: received " + JSON.stringify(payload), {
+                    operation: "wsclient",
+                    socket: this.socketId,
+                  });
+                  if (payload?.meta?.type === "heartbeat:ping") {
+                    this.logger.debug(`wsclient: sending pong`, {
+                      operation: "wsclient",
+                      socket: this.socketId,
+                    });
+                    this.ws.send(JSON.stringify({ meta: { type: "heartbeat:pong" } }));
+                  }
+                } catch (e) {
+                  this.logger.err(`wsclient: ${(<Error>e).message}`, {
+                    operation: "wsclient",
+                    socketId: this.socketId,
+                  });
+                }
+              });
+            } catch (e) {
+              this.logger.err(`wsclient: ${e}`, {
+                operation: "wsclient",
+                socketId: this.socketId,
+              });
+            }
+          }
+        }
+        (async () => {
+          try {
+            const socketUrl = `{{ .GetFlag "url" }}`;
+            const client = new WebSocketClient(
+              new Logger({ level: "debug" }), 
+              "socket",
+              socketUrl,
+            );
+            client.connect();
+            console.log("Connected");
+          } catch (e) {
+            console.log(e);
+          }
+        })();
+    lang: "deno"

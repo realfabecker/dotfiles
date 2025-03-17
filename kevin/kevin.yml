@@ -22,3 +22,7 @@ commands:
   - name: "git"
     short: "Manage GIT repositories"
     ref: ./git.yml
+
+  - name: "ws"
+    short: "Manage websocket connection"
+    ref: ./ws.yml

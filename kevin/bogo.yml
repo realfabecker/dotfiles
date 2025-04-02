@@ -21,7 +21,7 @@ commands:
       (cd $big_dir && git sparse-checkout init && git sparse-checkout set {{ .Name }} && git checkout)
 
       echo "moving to current working directory..."
-      mv $big_dir/python {{ .GetArg "name" }}
+      mv $big_dir/{{ .GetArg "name" }} {{ .GetArg "name" }}
 
       echo "installing project dependencies..."
       (cd {{ .GetArg "name" }} && rm -rf .git)

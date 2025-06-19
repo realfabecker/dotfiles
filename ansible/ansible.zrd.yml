@@ -189,13 +189,12 @@
           when: docker_check.rc != 0
 
         - name: "docker: gerenciar docker rootless"
-          become: false
+          become: true
           ansible.builtin.shell: |
-            sudo groupadd docker &&
-              sudo usermod -aG docker "{{ ansible_env.USER }}" &&
-              newgrp docker
+            sudo groupadd docker 
+            sudo usermod -aG docker "{{ ansible_env.USER }}" 
+            newgrp docker
           when: docker_check.rc != 0
-          ignore_errors: yes
 
     - name: "volta: instalar e configurar o Volta"
       become: yes

@@ -1,0 +1,234 @@
+- hosts: localhost
+  tasks:
+    - name: "apt: instalar pacotes padrão"
+      become: true
+      become_user: root
+      apt:
+        state: present
+        name:
+          - git
+          - curl
+          - tar
+          - unzip
+          - htop
+          - flameshot
+          - ffmpeg
+          - fzf
+          - make
+          - wget
+          - jq
+          - gnupg
+          - software-properties-common
+          - ca-certificates
+          - bison
+          - gcc
+          - imagemagick
+
+    - name: "home: criar diretórios padrão"
+      block:
+        - name: "home: criar diretório bin"
+          ignore_errors: yes
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/bin"
+            state: directory
+            mode: '0755'
+
+        - name: "home: criar diretório Workspace"
+          ignore_errors: yes
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/Workspace"
+            state: directory
+            mode: '0755'
+
+        - name: "home: criar diretório Softwares"
+          ignore_errors: yes
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/Workspace"
+            state: directory
+            mode: '0755'
+
+        - name: "home: criar diretório de funções"
+          ignore_errors: yes
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/.bash_functions"
+            state: directory
+            mode: '0755'
+
+    - name: "mkcert: instalar e configurar o mkcert"
+      block:
+        - name: "mkcert: verificar se o mkcert está instalado"
+          command: which mkcert
+          register: mkcert_check
+          ignore_errors: yes
+
+        - name: "mkcert: baixar o latest release mkcert"
+          get_url:
+            url: 'https://dl.filippo.io/mkcert/latest?for=linux/amd64'
+            dest: "{{ ansible_env.HOME }}/bin/mkcert"
+          when: mkcert_check.rc != 0
+
+        - name: "mkcert: tornar executável"
+          ansible.builtin.file:
+            path: "{{ ansible_env.HOME }}/bin/mkcert"
+            mode: '0755'
+          when: mkcert_check.rc != 0
+
+        - name: "mkcert: executar o script de instalação"
+          ansible.builtin.shell: "{{ ansible_env.HOME }}/bin/mkcert --install"
+
+    - name: "aws-cli: instalar e configurar o aws-cli"
+      become: true
+      block:
+        - name: "aws-cli: verificar se o aws cli está instalado"
+          command: which aws
+          register: aws_check
+          ignore_errors: yes
+
+        - name: "aws-cli: Baixar o arquivo .zip"
+          get_url:
+            url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+            dest: '/tmp/awscli-exe-linux-x86_64.zip'
+          when: aws_check.rc != 0
+
+        - name: "aws-cli: extrair o arquivo .zip"
+          ansible.builtin.unarchive:
+            src: "/tmp/awscli-exe-linux-x86_64.zip"
+            dest: "/tmp"
+            remote_src: yes
+          when: aws_check.rc != 0
+
+        - name: "aws-cli: executar o script de instalação"
+          ansible.builtin.shell: "/tmp/aws/install"
+          when: aws_check.rc != 0
+
+    - name: "terraform: instalar e configurar o Terraform"
+      become: yes
+      block:
+        - name: "terraform: verificar se o terraform está instalado"
+          command: which terraform
+          register: terraform_check
+          become: false
+          ignore_errors: yes
+
+        - name: "terraform: instalação de chaves de assinatura"
+          become: true
+          ansible.builtin.shell: |
+            wget -O- https://apt.releases.hashicorp.com/gpg | \
+              gpg --dearmor | \
+              sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+          when: terraform_check.rc != 0
+
+        - name: "terraform: verificação de chave padrão"
+          become: true
+          ansible.builtin.shell: |
+            gpg --no-default-keyring \
+              --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg \
+              --fingerprint
+          when: terraform_check.rc != 0
+
+        - name: "terraform: incluir repositório listagem apt"
+          become: true
+          ansible.builtin.shell: |
+            echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
+              https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+              sudo tee /etc/apt/sources.list.d/hashicorp.list
+          when: terraform_check.rc != 0
+
+        - name: "terraform: instalando por gerenciador apt"
+          ansible.builtin.shell: |
+            apt-get update && apt-get install terraform -y
+          when: terraform_check.rc != 0
+
+    - name: "kevin: instalar e configurar o Kevin"
+      block:
+        - name: "kevin: verificar se o kevin está instalado"
+          command: which kevin
+          register: kevin_check
+          ignore_errors: yes
+
+        - name: "kevin: baixar e instalar o utilitário"
+          ansible.builtin.shell: |
+            curl -so- https://raw.githubusercontent.com/realfabecker/kevin/master/install.sh | bash
+          when: kevin_check.rc != 0
+
+    - name: "docker: instalar e configurar o Docker"
+      become: yes
+      block:
+        - name: "docker: verificar se o docker está instalado"
+          command: which docker
+          register: docker_check
+          ignore_errors: yes
+
+        - name: "docker: instalação de chaves de assinatura"
+          become: true
+          ansible.builtin.shell: |
+            sudo apt-get update
+            sudo apt-get install ca-certificates curl
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+          when: docker_check.rc != 0
+
+        - name: "docker: incluir repositório listagem apt"
+          become: true
+          ansible.builtin.shell: |
+            echo \
+              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+              $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+              sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+          when: docker_check.rc != 0
+
+        - name: "docker: instalando por gerenciador apt"
+          ansible.builtin.shell: |
+            sudo apt-get install docker-ce \
+              docker-ce-cli \
+              containerd.io \
+              docker-buildx-plugin \
+              docker-compose-plugin -y
+          when: docker_check.rc != 0
+
+        - name: "docker: gerenciar docker rootless"
+          become: false
+          ansible.builtin.shell: |
+            sudo groupadd docker &&
+              sudo usermod -aG docker "{{ ansible_env.USER }}" &&
+              newgrp docker
+          when: docker_check.rc != 0
+          ignore_errors: yes
+
+    - name: "volta: instalar e configurar o Volta"
+      become: yes
+      block:
+        - name: "volta: verificar se o volta está instalado"
+          ansible.builtin.stat:
+            path: "{{ ansible_env.HOME }}/.volta/bin/volta"
+          register: volta_check
+          become: false
+          ignore_errors: yes
+
+        - name: "volta: intalação por curl"
+          become: false
+          ansible.builtin.shell: |
+            curl https://get.volta.sh | bash && {{ ansible_env.HOME }}/.volta/bin/volta setup
+          when: volta_check.stat.exists == False
+
+    - name: "gh: instalar e configurar o gh"
+      become: yes
+      block:
+          - name: "gh: verificar se o gh está instalado"
+            command: which gh
+            register: gh_check
+            ignore_errors: yes
+          - name: "gh: instalar e configurar o gh"
+            become: true
+            ansible.builtin.shell: |
+              (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
+              && sudo mkdir -p -m 755 /etc/apt/keyrings \
+                    && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+                    && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+              && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+              && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+              && sudo apt update \
+              && sudo apt install gh -y
+            when: gh_check.rc != 0

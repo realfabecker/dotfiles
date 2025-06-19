@@ -193,7 +193,7 @@
           become: true
           ansible.builtin.shell: |
             grep docker /etc/group -q && echo "docker" || sudo groupadd docker
-            sudo usermod -aG docker "{{ ansible_env.USER }}"
+            sudo usermod -aG docker {{ ansible_env.USER }}
           when: docker_check.rc != 0
 
     - name: "volta: instalar e configurar o Volta"

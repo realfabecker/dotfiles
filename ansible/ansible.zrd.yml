@@ -180,6 +180,7 @@
           when: docker_check.rc != 0
 
         - name: "docker: instalando por gerenciador apt"
+          become: true
           ansible.builtin.shell: |
             sudo apt-get install docker-ce \
               docker-ce-cli \
@@ -191,9 +192,8 @@
         - name: "docker: gerenciar docker rootless"
           become: true
           ansible.builtin.shell: |
-            sudo groupadd docker 
-            sudo usermod -aG docker "{{ ansible_env.USER }}" 
-            newgrp docker
+            sudo groupadd docker \
+              && sudo usermod -aG docker "{{ ansible_env.USER }}"
           when: docker_check.rc != 0
 
     - name: "volta: instalar e configurar o Volta"

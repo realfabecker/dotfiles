@@ -102,6 +102,26 @@
         - name: "aws-cli: executar o script de instalação"
           ansible.builtin.shell: "/tmp/aws/install"
           when: aws_check.rc != 0
+          
+    - name: "ssm: instalar e configurar o session-manager-plugin"
+      become: true
+      block:
+        - name: "ssm: verificar se o ssm está instalado"
+          command: which session-manager-plugin
+          register: ssm_check
+          ignore_errors: yes
+
+        - name: "ssm: Baixar o arquivo .deb"
+          get_url:
+            url: "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb"
+            dest: '/tmp/session-manager-plugin.deb'
+          when: ssm_check.rc != 0
+
+        - name: "ssm: executar o script de instalação"
+          become: true
+          ansible.builtin.shell: |
+            dpkg -i /tmp/session-manager-plugin.deb
+          when: ssm_check.rc != 0
 
     - name: "terraform: instalar e configurar o Terraform"
       become: yes

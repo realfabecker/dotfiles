@@ -4,10 +4,10 @@ commands:
     flags:
       - name: "cluster"
         short: "c"
-        required: true
+        default: "cluster-painel-worker"  
       - name: "profile"
         short: "x"
-        required: true
+        default: "magazord-ps-maintain"
     args:
       - name: "task"
         usage: "task name"
@@ -41,7 +41,7 @@ commands:
         required: true
       - name: "profile"
         short: "x"
-        required: true
+        default: "magazord-ps-maintain"
     cmd: |
       id=$(aws ec2 describe-instances --filter 'Name=tag:Name,Values={{ .GetFlag "tag" }}' \
         --query "Reservations[].Instances[?State.Name == 'running'].InstanceId[]" \
@@ -75,16 +75,13 @@ commands:
         args:
           - name: table
             required: true
-          - name: "profile"
-            short: "x"
-            required: true
         cmd: |
-          aws --profile {{ .GetFlag "profile" }} dynamodb describe-table --table-name {{ .GetArg "table" }} | jq '.Table | pick( .AttributeDefinitions,.TableName, .KeySchema, .ProvisionedThroughput, .GlobalSecondaryIndexes) | del( .ProvisionedThroughput.NumberOfDecreasesToday, .GlobalSecondaryIndexes[].IndexStatus, .GlobalSecondaryIndexes[].ProvisionedThroughput.NumberOfDecreasesToday, .GlobalSecondaryIndexes[].WarmThroughput, .GlobalSecondaryIndexes[].IndexSizeBytes, .GlobalSecondaryIndexes[].ItemCount, .GlobalSecondaryIndexes[].IndexArn) | .GlobalSecondaryIndexes[].ProvisionedThroughput.ReadCapacityUnits=1 | .GlobalSecondaryIndexes[].ProvisionedThroughput.WriteCapacityUnits=1 | .ProvisionedThroughput.WriteCapacityUnits=1 | .ProvisionedThroughput.ReadCapacityUnits=1'
+          aws --profile localstack dynamodb describe-table --table-name {{ .GetArg "table" }} | jq '.Table | pick( .AttributeDefinitions,.TableName, .KeySchema, .ProvisionedThroughput, .GlobalSecondaryIndexes) | del( .ProvisionedThroughput.NumberOfDecreasesToday, .GlobalSecondaryIndexes[].IndexStatus, .GlobalSecondaryIndexes[].ProvisionedThroughput.NumberOfDecreasesToday, .GlobalSecondaryIndexes[].WarmThroughput, .GlobalSecondaryIndexes[].IndexSizeBytes, .GlobalSecondaryIndexes[].ItemCount, .GlobalSecondaryIndexes[].IndexArn) | .GlobalSecondaryIndexes[].ProvisionedThroughput.ReadCapacityUnits=1 | .GlobalSecondaryIndexes[].ProvisionedThroughput.WriteCapacityUnits=1 | .ProvisionedThroughput.WriteCapacityUnits=1 | .ProvisionedThroughput.ReadCapacityUnits=1'
 
       - name: "list-tables"
         short: "list tabelas no dynamodb"
         cmd: |
-          aws --profile {{ .GetFlag "profile" }} dynamodb list-tables
+          aws --profile localstack --endpoint-url http://localstack:4566 dynamodb list-tables
 
       - name: "create-table"
         short: "cria tabela no dynamodb"
@@ -93,4 +90,4 @@ commands:
             required: false
             default: "./backup.json"
         cmd: |
-          aws --profile {{ .GetFlag "profile" }} dynamodb create-table --cli-input-json file://{{ .GetArg "file"}}
+          aws --profile localstack dynamodb create-table --cli-input-json file://{{ .GetArg "file"}}

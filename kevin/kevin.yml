@@ -15,10 +15,6 @@ commands:
     short: "Connect to AWS services"
     ref: ./aws.yml
 
-  - name: "vpn"
-    short: "Manage VPN connections"
-    ref: ./vpn.yml
-
   - name: "git"
     short: "Manage GIT repositories"
     ref: ./git.yml

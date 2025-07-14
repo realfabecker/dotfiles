@@ -1,11 +1,14 @@
 commands:
   - name: "connect"
     short: "websocket client"
-    flags:
+    args:
       - name: url
         usage: "server url"
-        default: "ws://172.31.80.65:32768/?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImRldl9yYWZhZWxfYmVja2VyIiwic2NvcGUiOiJ3ZWJzb2NrZXQ6ZGVmYXVsdCIsImhvc3RuYW1lIjoiem9yZC0wMTE4IiwiaWF0IjoxNzQyMjEwMjk5fQ.szpH68LpSJ7LJRkl31065kijWqQEm15amkHqRvAWrUA"
-
+        required: true        
+    flags:
+      - name: context
+        usage: "context"
+        required: false
     # language=typescript
     cmd: |
         import { StandardWebSocketClient as ws } from "https://deno.land/x/websocket@v0.1.4/mod.ts";
@@ -104,6 +107,33 @@ commands:
                     });
                     this.ws.send(JSON.stringify({ meta: { type: "heartbeat:pong" } }));
                   }
+                  if (payload?.meta?.type === "client:logs.request") {                                                                  
+                      const sendLogs = () => {
+                          const seconds =(Math.floor(Math.random() * 10) + 1)
+                          let records = 0;
+                          this.logger.inf(`replying with client:logs.response ${seconds}s`);
+                          const interval = setInterval(() => {
+                              const d = {
+                                  meta: {
+                                      type: "client:logs.response",
+                                  },
+                                  data: {
+                                      username: payload.data.username,
+                                      message: `${payload.data.username}: ${payload.data.hostname} - ${Math.random().toString(32).slice(2)}`,
+                                      timestamp: new Date().getTime()
+                                  }
+                              }
+                              this.ws.send(JSON.stringify(d))
+                              records ++;
+                              if(records > seconds) {
+                                  this.logger.inf("ending log stream for seconds interval");
+                                  clearInterval(interval);
+                              }
+                          }, 1000)                          
+                          
+                      }
+                      sendLogs()
+                  }
                 } catch (e) {
                   this.logger.err(`wsclient: ${(<Error>e).message}`, {
                     operation: "wsclient",
@@ -119,16 +149,29 @@ commands:
             }
           }
         }
+        
         (async () => {
           try {
-            const socketUrl = `{{ .GetFlag "url" }}`;
+            const socketUrl = `{{ .GetArg "url" }}`;
+            const logger = new Logger({ "level": "debug" }); 
             const client = new WebSocketClient(
-              new Logger({ level: "debug" }), 
+              logger, 
               "socket",
               socketUrl,
             );
             client.connect();
-            console.log("Connected");
+            if (`{{ .GetFlag "context" }}` === "logs") {
+                logger.debug("Connected, trigger client:logs.request");
+                setTimeout(() => {
+                  const payload = {
+                    meta: {
+                        type: "client:logs.request",
+                    }
+                  }
+                  logger.debug('asking for log messages');
+                  client.ws.send(JSON.stringify(payload))    
+                }, 1000);     
+            }
           } catch (e) {
             console.log(e);
           }

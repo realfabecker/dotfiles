@@ -9,6 +9,7 @@
           - git
           - curl
           - tar
+          - net-tools
           - unzip
           - telnet
           - htop

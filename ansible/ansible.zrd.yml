@@ -24,7 +24,8 @@
           - ca-certificates
           - bison
           - gcc
-          - imagemagick
+          - g++
+          - imagemagick          
 
     - name: "home: criar diretórios padrão"
       block:

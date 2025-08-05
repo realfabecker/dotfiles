@@ -25,6 +25,7 @@
           - gcc
           - imagemagick
           - ftp
+          - tldr
 
     - name: "home: criar diretórios padrão"
       block:

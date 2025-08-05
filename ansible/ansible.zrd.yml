@@ -13,7 +13,6 @@
           - unzip
           - telnet
           - htop
-          - flameshot
           - ffmpeg
           - fzf
           - make
@@ -24,8 +23,8 @@
           - ca-certificates
           - bison
           - gcc
-          - g++
-          - imagemagick          
+          - imagemagick
+          - ftp
 
     - name: "home: criar diretórios padrão"
       block:
@@ -162,18 +161,6 @@
             apt-get update && apt-get install terraform -y
           when: terraform_check.rc != 0
 
-    - name: "kevin: instalar e configurar o Kevin"
-      block:
-        - name: "kevin: verificar se o kevin está instalado"
-          command: which kevin
-          register: kevin_check
-          ignore_errors: yes
-
-        - name: "kevin: baixar e instalar o utilitário"
-          ansible.builtin.shell: |
-            curl -so- https://raw.githubusercontent.com/realfabecker/kevin/master/install.sh | bash
-          when: kevin_check.rc != 0
-
     - name: "docker: instalar e configurar o Docker"
       become: yes
       block:
@@ -219,22 +206,6 @@
             sudo usermod -aG docker {{ ansible_env.USER }}
           when: docker_check.rc != 0
 
-    - name: "volta: instalar e configurar o Volta"
-      become: yes
-      block:
-        - name: "volta: verificar se o volta está instalado"
-          ansible.builtin.stat:
-            path: "{{ ansible_env.HOME }}/.volta/bin/volta"
-          register: volta_check
-          become: false
-          ignore_errors: yes
-
-        - name: "volta: intalação por curl"
-          become: false
-          ansible.builtin.shell: |
-            curl https://get.volta.sh | bash && {{ ansible_env.HOME }}/.volta/bin/volta setup
-          when: volta_check.stat.exists == False
-
     - name: "gh: instalar e configurar o gh"
       become: yes
       block:
@@ -254,3 +225,14 @@
               && sudo apt update \
               && sudo apt install gh -y
             when: gh_check.rc != 0
+
+    - name: "nvm: instalar e configurar o nvm"
+      block:
+          - name: "nvm: verificar se o nvm está instalado"
+            command: which nvm
+            register: nvm_check
+            ignore_errors: yes
+          - name: "nvm: instalar e configurar o nvm"
+            ansible.builtin.shell: |
+              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+            when: nvm_check.rc != 0

@@ -9,12 +9,13 @@
           - git
           - curl
           - tar
+          - net-tools
           - unzip
+          - telnet
           - htop
-          - flameshot
           - ffmpeg
           - fzf
-          - make 
+          - make
           - wget
           - jq
           - gnupg
@@ -23,6 +24,9 @@
           - bison
           - gcc
           - imagemagick
+          - ftp
+          - tldr
+          - redis-tools
 
     - name: "home: criar diretórios padrão"
       block:

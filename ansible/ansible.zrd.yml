@@ -26,6 +26,7 @@
           - imagemagick
           - ftp
           - tldr
+          - redis-tools
 
     - name: "home: criar diretórios padrão"
       block:

@@ -17,7 +17,7 @@ commands:
 
       echo "Exporting temporary public key"
       temp_key=$(mktemp)
-      kevin gpg armor:sub {{ .GetArg "kid" }} > $temp_key
+      kevin gpg export {{ .GetArg "kid" }} > $temp_key
 
       echo "Publishing key to github"
       gh gpg-key add $temp_key

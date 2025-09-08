@@ -1,6 +1,6 @@
 commands:
   - name: "publish"
-    short: "publish the gpg public key to github (gh auth refresh -s write:gpg_key)"
+    short: "publish the gpg public key to github (gh auth refresh -s admin:gpg_key)"
     args:
       - name: kid
         short: "k"

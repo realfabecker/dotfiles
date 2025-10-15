@@ -21,10 +21,11 @@ commands:
       (cd $big_dir && git sparse-checkout init && git sparse-checkout set {{ .Name }} && git checkout)
 
       echo "moving to current working directory..."
-      mv $big_dir/{{ .GetArg "name" }} {{ .GetArg "name" }}
+      mv $big_dir/{{ .Name }} {{ .GetArg "name" }}
 
       echo "installing project dependencies..."
       (cd {{ .GetArg "name" }} && rm -rf .git)
 
       echo "cleaning up boilerplate things..."
       rm -rf $big_dir
+

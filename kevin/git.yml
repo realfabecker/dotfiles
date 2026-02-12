@@ -24,6 +24,161 @@ commands:
       (cd {{ .GetArg "name" }} && kevin gpg git {{ .GetFlag "email" }})
     shell: "/bin/bash"
 
+  - name: "repo-elem"
+    short: "put repository element"
+    flags:
+      - name: owner
+        usage: "repository owner"
+        required: true
+      - name: repo
+        usage: "repository name"
+        required: true
+      - name: elem
+        usage: "repository elem"
+        required: true
+      - name: token
+        usage: "github token"
+        required: true    
+    #language=typescript
+    cmd: |   
+      import * as fs from "node:fs";
+      import * as path from "node:path";
+
+      async function sendElemPutRequest(opts: {
+        url: string;
+        token: string;
+        body: Record<string, any>;
+      }) {
+        const response = await fetch(opts.url, {
+          method: "POST",
+          body: JSON.stringify(opts.body),
+          headers: {
+            Authorization: `Bearer ${opts.token}`,
+          },
+        });
+        if (response.status !== 201) {
+          const responseBody = await response.json();
+          throw new Error(`Github Error: ${JSON.stringify({ responseBody })}`);
+        }
+      }
+
+      function readElemListFromFile(elem: string): Record<string, any>[] {
+        const filePath = path.join(
+          import.meta.dirname,
+          "src",
+          "assets",
+          `${elem}.json`
+        );
+        const fileData = fs.readFileSync(filePath, { encoding: "utf8" });
+        return JSON.parse(fileData);
+      }
+
+      async function putRepositoryElem(opts: {
+        owner: string;
+        repo: string;
+        token: string;
+        elem: string;
+      }) {
+        for (const item of readElemListFromFile(opts.elem)) {
+          try {
+            await sendElemPutRequest({
+              url: `https://api.github.com/repos/${opts.owner}/${opts.repo}/${opts.elem}`,
+              body: item,
+              token: opts.token,
+            });
+            console.log(
+              `level="info" repo="${opts.repo}" elem="${item.name}" message="Success"`
+            );
+          } catch (e) {
+            console.log(
+              `level="error" repo="${opts.repo}" elem="${item.name}" message="${
+                (<Error>e).message
+              }"`
+            );
+          }
+        }
+      }      
+      await putRepositoryElem({
+        owner: `{{ .GetFlag "owner" }}`,
+        repo: `{{ .GetFlag "repo" }}`,
+        elem: `{{ .GetFlag "elem" }}`,
+        token: `{{ .GetFlag "token" }}`,
+      });
+
+  - name: "repo-fetch"
+    short: "fetch repositories from a account"
+    flags:
+      - name: owner
+        usage: "repository owner"
+        required: true
+      - name: token
+        usage: "github token"
+        required: true
+    # language=typescript
+    cmd: |
+      import * as fs from "node:fs";
+      import * as path from "node:path";
+      import * as os from "node:os";
+
+      async function* paginateRepositoriesFromGithubApi(opts: {
+        token: string;
+        url: string;
+        start_page: number;
+        per_page: number;
+      }) {
+        let page: number | null = opts.start_page;
+
+        do {
+          console.log(`url=${opts.url} page=${page}`);
+          const response = await fetch(
+            `${opts.url}?page=${page}&per_page=${opts.per_page}`,
+            {
+              headers: {
+                Authorization: `Bearer ${opts.token}`,
+              },
+            }
+          );
+
+          const data = await response.json();
+          if (Array.isArray(data) && data.length) {
+            yield* data;
+          }
+
+          const r = response?.headers
+            ?.get("link")
+            ?.match(
+              /<https.*page\=(\d+)&per_page\=(\d+).*rel\="next"/
+            );
+
+          page = (r?.[1] ?? null) as number | null;
+        } while (page);
+      }
+
+      async function readReposIntoLocalJsonFile(opts: {
+        owner: string;
+        token: string;
+      }) {
+        const filePath = path.join(import.meta.dirname, "repos.json");
+        if (fs.existsSync(filePath)) fs.rmSync(filePath);
+
+        const writeStream = fs.createWriteStream(filePath);
+        writeStream.write("[" + os.EOL);
+        for await (const x of paginateRepositoriesFromGithubApi({
+          url: `https://api.github.com/orgs/${opts.owner}/repos`,
+          token: opts.token,
+          start_page: 1,
+          per_page: 100,
+        })) {
+          writeStream.write(JSON.stringify({ name: x.name }) + "," + os.EOL);
+        }
+        writeStream.write("]" + os.EOL);
+      }
+
+      await readReposIntoLocalJsonFile({
+        owner: `{{ .GetFlag "owner" }}`,
+        token: `{{ .GetFlag "token" }}`,
+      });
+
   - name: "hotfix"
     short: "manutenção de branchs em contexto de hotfix"
     commands:

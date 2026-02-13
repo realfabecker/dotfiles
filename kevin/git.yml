@@ -115,9 +115,9 @@ commands:
             required: true
           - name: token
             usage: "github token"
-            required: true    
+            required: true
         #language=typescript
-        cmd: |   
+        cmd: |
           import * as fs from "node:fs";
           import * as path from "node:path";
 
@@ -187,7 +187,7 @@ commands:
     commands:
       - name: "branch"
         short: "manutenção de branch de hotfix"
-        commands: 
+        commands:
           - name: "create"
             short: "cria a branch para contexto de hotfix"
             args:
@@ -202,7 +202,7 @@ commands:
 
               if [[ -z $release_date ]]; then
                 echo "[ERR] Não é possível criar a branch. A branch release não existe"
-              fi;"
+              fi;
 
               echo "[INF] Obtendo referencias da branch base origin/release-$release_date..."
               git fetch --quiet origin "release-$release_date"
@@ -216,17 +216,17 @@ commands:
               fi;
 
               echo "[INF] Criando a branch $hotfix_branch..."
-              git checkout -b $hotfix_branch -t "origin/release-$release_date"
+              git checkout -b $hotfix_branch -t "origin/release-$release_date" > /dev/null 2>&1
 
               echo "[INF] Publicando a branch $hotfix_branch no remoto..."
-              git push -u origin $hotfix_branch
-        
+              git push -uq origin $hotfix_branch > /dev/null 2>&1
+
       - name: "pr"
         short: "operaçõse de pull request de hotfix"
         commands:
           - name: "create"
             short: "Cria as pull request para o pr hotfix"
-            cmd: |     
+            cmd: |
               set -e 
 
               if ! git branch --show-current | grep -E release-[0-9]{6} -q; then 
